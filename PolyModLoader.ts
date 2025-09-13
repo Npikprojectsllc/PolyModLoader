@@ -17,7 +17,7 @@ export class PolyMod {
     get author() {
         return this.modAuthor;
     }
-    modAuthor: string;
+    modAuthor: string | undefined;
     /**
      * The mod ID.
      * 
@@ -26,7 +26,7 @@ export class PolyMod {
     get id() {
         return this.modID;
     }
-    modID: string;
+    modID: string | undefined;
     /**
      * The mod name.
      * 
@@ -35,7 +35,7 @@ export class PolyMod {
     get name() {
         return this.modName;
     }
-    modName: string;
+    modName: string | undefined;
     /**
      * The mod version.
      * 
@@ -44,7 +44,7 @@ export class PolyMod {
     get version() {
         return this.modVersion;
     }
-    modVersion: string;
+    modVersion: string | undefined;
     /**
      * The the mod's icon file URL.
      * 
@@ -53,12 +53,12 @@ export class PolyMod {
     get iconSrc() {
         return this.IconSrc;
     }
-    IconSrc: string;
+    IconSrc: string | undefined;
     set iconSrc(src) {
         this.IconSrc = src;
     }
     loaded: boolean = false;
-    set setLoaded(status) {
+    set setLoaded(status: boolean) {
         this.loaded = status;
     }
     /**
@@ -77,7 +77,7 @@ export class PolyMod {
     get baseUrl() {
         return this.modBaseUrl;
     }
-    modBaseUrl: string;
+    modBaseUrl: string | undefined;
     set baseUrl(url) {
         this.modBaseUrl = url;
     }
@@ -89,18 +89,18 @@ export class PolyMod {
     get touchesPhysics() {
         return this.touchingPhysics;
     }
-    touchingPhysics: boolean;
+    touchingPhysics: boolean | undefined;
     /**
      * Other mods that this mod depends on.
      */
     get dependencies() {
         return this.modDependencies;
     }
-    modDependencies: Array<{ version: string, id: string }>
+    modDependencies: Array<{ version: string, id: string }> | undefined;
     get descriptionUrl() {
         return this.modDescription;
     }
-    modDescription: string;
+    modDescription: string | undefined;
     /**
      * Whether the mod is saved as to always fetch latest version (`true`)
      * or to fetch a specific version (`false`, with version defined by {@link PolyMod.version}).
@@ -110,20 +110,21 @@ export class PolyMod {
     get savedLatest() {
         return this.latestSaved;
     }
-    latestSaved: boolean;
+    latestSaved: boolean | undefined;
     set savedLatest(latest) {
         this.latestSaved = latest;
     }
     get initialized() {
         return this.modInitialized;
     }
-    modInitialized: boolean;
+    modInitialized: boolean | undefined;
     set initialized(initState) {
         this.modInitialized = initState;
     }
-    polyVersion: Array<string>;
-    assetFolder: string;
-    applyManifest = (manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string> }, dependencies: Array<{ id: string, version: string }> }) => {
+    polyVersion: Array<string> | undefined;
+    assetFolder: string | undefined;
+    manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }> } | undefined;
+    applyManifest = (manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }> }) => {
         const mod = manifest.polymod;
         /** @type {string} */
         this.modName = mod.name;
@@ -160,6 +161,10 @@ export class PolyMod {
      * Function to run once game finishses loading
      */
     onGameLoad = () => { }
+    /**
+     * Whether the mod
+     */
+    offlineMode: boolean = false;
 }
 
 /**
@@ -272,7 +277,7 @@ export class EditorExtras {
         this.#editorClass = editorClass;
     }
 
-    blockNumberFromId(id): number {
+    blockNumberFromId(id: string): number {
         return this.pml.getFromPolyTrack(`Sb.${id}`);
     }
 
@@ -318,9 +323,94 @@ export class EditorExtras {
     }
 }
 
+class PolyDB { 
+    #db: IDBDatabase | undefined;
+    constructor(){
+        
+    }
+    async #getDb() {
+        return new Promise<IDBDatabase>((resolve, reject) => {
+            if(this.#db) {
+                return resolve(this.#db);
+            }
+            const DBOpenRequest = window.indexedDB.open("PMLMods");
+            DBOpenRequest.onerror = (event) => {
+                console.error("Error initializing database.");
+                return reject();
+            };
+
+            DBOpenRequest.onsuccess = (event) => {
+                console.log("Database initialized.")
+
+                this.#db = DBOpenRequest.result;
+                return resolve(this.#db);
+            };
+
+            DBOpenRequest.onupgradeneeded = (event: IDBVersionChangeEvent ) => {
+                // @ts-ignore For some reason it doesn't like this
+                this.#db = event.target?.result;
+
+                if(!this.#db){
+                    console.error("Error initializing database.");
+                    return reject();
+                }
+
+                this.#db.onerror = (event) => {
+                    console.error("Error initializing database.");
+                };
+
+                const objectStore = this.#db.createObjectStore("mods", { keyPath: 'baseUrl' });
+                console.log("Object store created.");
+                return resolve(this.#db);
+            };
+        });
+    }
+    async getMod(baseUrl: string) : Promise<{ baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }>}, codeStr: Blob } | null> {
+        let localDb = await this.#getDb();
+        return await new Promise((resolve, reject) => {
+            if (!localDb) {
+                console.error("Database not initialized.");
+                return false;
+            }
+            const transaction = localDb.transaction("mods", "readonly");
+            const store = transaction?.objectStore("mods");
+            const request = store?.get(baseUrl);
+            if(!request) { return null; };
+            request.onsuccess = () => resolve(request?.result || null );
+            request.onerror = () => reject(null);
+        })
+    }
+    async saveMod(baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }> } | undefined){
+        const localDb = await this.#getDb();
+        if (!localDb) {
+            console.error("Database not initialized.");
+            return false;
+        }
+
+        const response = await fetch(`${baseUrl}/${version}/${manifest?.polymod.main}`);
+        const codeStr = await response.text();
+
+        return new Promise((resolve, reject) => {
+            const tx = localDb.transaction("mods", "readwrite");
+            const store = tx.objectStore("mods");
+
+            const request = store.put({ baseUrl, version, manifest, codeStr });
+
+            request.onsuccess = () => {
+                resolve(true);
+            };
+            request.onerror = () => {
+                console.error("Error saving mod:", request.error);
+                reject(request.error);
+            };
+        });
+    }
+}
+
 export class PolyModLoader {
     #polyVersion: string;
     #allMods: Array<PolyMod>;
+    polyDb: PolyDB;
     editorExtras: EditorExtras;
     #physicsTouched: boolean;
     #simWorkerClassMixins: Array<{
@@ -354,6 +444,7 @@ export class PolyModLoader {
         this.#polyVersion = polyVersion;
         /** @type {PolyMod[]} */
         this.#allMods = [];
+        this.polyDb = new PolyDB();
         /** @type {boolean} */
         this.#physicsTouched = false;
         /** 
@@ -390,8 +481,8 @@ export class PolyModLoader {
     get polyVersion() {
         return this.#polyVersion; // Why is this even private lmfao
     }
-    localStorage: Storage
-    #polyModUrls: Array<{ base: string, version: string, loaded: boolean }>
+    localStorage: Storage | undefined;
+    #polyModUrls: Array<{ base: string, version: string, loaded: boolean }> | undefined;
     initStorage(localStorage: Storage) {
         /** @type {Storage} */
         this.localStorage = localStorage;
@@ -472,7 +563,7 @@ export class PolyModLoader {
         loadingDiv.appendChild(loadingUI);
         ui.appendChild(loadingDiv);
 
-        const total = this.#polyModUrls.length;
+        const total:number = this.#polyModUrls ? this.#polyModUrls.length : 0;
         const current = {
             num: 0,
             text: undefined,
@@ -573,10 +664,11 @@ export class PolyModLoader {
         }
 
         // Actual mod importing
-        for (let polyModObject of this.#polyModUrls) {
+        for (let polyModObject of this.#polyModUrls ? this.#polyModUrls : []) {
             startImportMod(polyModObject.base, polyModObject.version);
-
+            const dbMod = await this.polyDb.getMod(polyModObject.base);
             let latest = false;
+            let importFromDB = false;;
             current.totalParts = 2;
             if (polyModObject.version === "latest") {
                 current.totalParts = 3;
@@ -587,33 +679,45 @@ export class PolyModLoader {
                     latest = true;
                 } catch (err) {
                     errorCurrent();
+                    importFromDB = true;
                     alert(`Couldn't find latest version for ${polyModObject.base}`);
                     console.error("Error in fetching latest version json:", err);
                 }
                 finishFetchLatest(polyModObject.version);
             }
+            if(dbMod && polyModObject.version === dbMod.version) {
+                console.log("Mod version in DB, skipping import")
+                importFromDB = true;
+            }
             const polyModUrl = `${polyModObject.base}/${polyModObject.version}`;
             startFetchManifest();
             try {
-                const manifestFile = await fetch(`${polyModUrl}/manifest.json`).then(r => r.json());
+                let manifestFile;
+                if(importFromDB && dbMod) {
+                    manifestFile = dbMod.manifest
+                } else {
+                    manifestFile = await fetch(`${polyModUrl}/manifest.json`).then(r => r.json());
+                }
                 let mod = manifestFile.polymod;
                 startFetchModMain(mod.main);
                 try {
-                    const modImport = await import(`${polyModUrl}/${mod.main}`);
+                    const modImport = await import(importFromDB && dbMod ? URL.createObjectURL(new Blob([dbMod.codeStr], { type: "application/javascript" })) : `${polyModUrl}/${mod.main}`);
 
-                    let newMod = modImport.polyMod;
+                    let newMod:PolyMod = modImport.polyMod;
                     mod.version = polyModObject.version;
                     if (this.getMod(mod.id)) alert(`Duplicate mod detected: ${mod.name}`);
+                    newMod.manifest = manifestFile;
+                    newMod.offlineMode = importFromDB;
                     newMod.applyManifest(manifestFile);
                     newMod.baseUrl = polyModObject.base;
-                    newMod.applyManifest = (nothing) => { console.warn("Can't apply manifest after initialization!") }
+                    newMod.applyManifest = (nothing: any) => { console.warn("Can't apply manifest after initialization!") }
                     newMod.savedLatest = latest;
                     newMod.iconSrc = `${polyModUrl}/icon.png`;
                     if (polyModObject.loaded) {
                         newMod.setLoaded = true;
                         if (newMod.touchesPhysics) {
                             this.#physicsTouched = true;
-                            this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e, t, n, i, r, a) => { })
+                            this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e: any, t: any, n: any, i: any, r: any, a: any) => { })
                         }
                     }
                     this.#allMods.push(newMod);
@@ -634,7 +738,7 @@ export class PolyModLoader {
         loadingDiv.remove();
     }
     getPolyModsStorage() {
-        const polyModsStorage = this.localStorage.getItem("polyMods");
+        const polyModsStorage = this.localStorage?.getItem("polyMods");
         if (polyModsStorage) {
             this.#polyModUrls = JSON.parse(polyModsStorage);
         } else {
@@ -645,21 +749,22 @@ export class PolyModLoader {
                     "loaded": true
                 }
             ];
-            this.localStorage.setItem("polyMods", JSON.stringify(this.#polyModUrls));
+            this.localStorage?.setItem("polyMods", JSON.stringify(this.#polyModUrls));
         }
         return this.#polyModUrls;
     }
     serializeMod(mod: PolyMod) {
-        return { "base": mod.baseUrl, "version": mod.savedLatest ? "latest" : mod.version, "loaded": mod.isLoaded || false };
+        return { "base": mod.baseUrl ? mod.baseUrl : "", "version": mod.savedLatest ? "latest" : mod.version ? mod.version : "latest", "loaded": mod.isLoaded || false };
     }
     saveModsToLocalStorage() {
         let savedMods: Array<{ base: string, version: string, loaded: boolean }> = [];
         for (let mod of this.#allMods) {
             const modSerialized = this.serializeMod(mod);
             savedMods.push(modSerialized);
+            this.polyDb.saveMod(modSerialized.base, mod.version || "", mod.manifest);
         }
         this.#polyModUrls = savedMods;
-        this.localStorage.setItem("polyMods", JSON.stringify(this.#polyModUrls));
+        this.localStorage?.setItem("polyMods", JSON.stringify(this.#polyModUrls));
     }
     /**
      * Reorder a mod in the internal list to change its priority in mod loading.
@@ -723,7 +828,7 @@ export class PolyModLoader {
                 mod.version = polyModObject.version;
                 newMod.applyManifest(manifestFile);
                 newMod.baseUrl = polyModObject.base;
-                newMod.applyManifest = (nothing) => { console.warn("Can't apply manifest after initialization!") }
+                newMod.applyManifest = (nothing:any) => { console.warn("Can't apply manifest after initialization!") }
                 newMod.savedLatest = latest;
                 this.#allMods.push(newMod);
                 this.saveModsToLocalStorage();
@@ -779,7 +884,7 @@ export class PolyModLoader {
         }
     }
     settingClass: any;
-    soundManager: SoundManager;
+    soundManager: SoundManager | undefined;
     registerKeybind(name: string, id: string, event: string, defaultBind: string, secondBindOptional: string | null, callback: Function) {
         this.#keybindings.push(`MR(this, iR, "m", ER).call(this, MR(this, aR, "f").get("${name}"), ${Variables.KeybindEnum}.${id}),`);
         this.#bindConstructor.push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${this.#latestBinding}] = "${id}";`);
@@ -819,7 +924,7 @@ export class PolyModLoader {
      * 
      * @param {PolyMod} mod - The mod to remove.
      */
-    removeMod(mod) {
+    removeMod(mod: PolyMod) {
         if (!mod) return;
         if (mod.id === "pmlcore") {
             return;
@@ -836,7 +941,7 @@ export class PolyModLoader {
      * @param {PolyMod} mod   - The mod to set the state of.
      * @param {boolean} state - The state to set. `true` is loaded, `false` is unloaded.
      */
-    setModLoaded(mod, state) {
+    setModLoaded(mod: PolyMod, state: boolean) {
         if (!mod) return;
         if (mod.id === "pmlcore") {
             return;
@@ -852,7 +957,7 @@ export class PolyModLoader {
         this.#preInitPML();
         let initList: Array<string> = []
         for (let polyMod of this.#allMods) {
-            if (polyMod.isLoaded)
+            if (polyMod.id && polyMod.isLoaded)
                 initList.push(polyMod.id);
         }
         if (initList.length === 0) return; // no mods to initialize lol
@@ -863,7 +968,7 @@ export class PolyModLoader {
                 continue;
             console.log(initList[0]);
             let initCheck = true;
-            for (let dependency of currentMod.dependencies) {
+            for (let dependency of currentMod.dependencies || []) {
                 let curDependency = this.getMod(dependency.id)
                 if (!curDependency) {
                     initCheck = false;
@@ -889,7 +994,7 @@ export class PolyModLoader {
                 if (!curDependency.initialized) {
                     initCheck = false;
                     initList.splice(0, 1);
-                    initList.push(currentMod.id);
+                    initList.push(currentMod.id || "");
                     break;
                 }
             }
@@ -955,7 +1060,7 @@ export class PolyModLoader {
      * @param   {string} id - The ID of the mod to get
      * @returns {PolyMod}   - The requested mod's object.
      */
-    getMod(id) {
+    getMod(id: string) {
         for (let polyMod of this.#allMods) {
             if (polyMod.id == id) return polyMod;
         }
@@ -1014,7 +1119,7 @@ export class PolyModLoader {
      * @param {function} func       - The new function to be injected.
      */
     registerSimWorkerClassMixin(scope: string, path: string, mixinType: MixinType, accessors: string | Array<string>, func: Function | string, extraOptinonal?: Function | string) {
-        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e, t, n, i, r, a) => { })
+        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e:any, t:any, n:any, i:any, r:any, a:any) => { })
         this.#simWorkerClassMixins.push({
             scope: scope,
             path: path,
@@ -1034,7 +1139,7 @@ export class PolyModLoader {
      * @param {function} func       - The new function to be injected.
      */
     registerSimWorkerFuncMixin(path: string, mixinType: MixinType, accessors: string | Array<string>, func: Function | string, extraOptinonal?: Function | string) {
-        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e, t, n, i, r, a) => { })
+        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e:any, t:any, n:any, i:any, r:any, a:any) => { })
         this.#simWorkerFuncMixins.push({
             path: path,
             mixinType: mixinType,

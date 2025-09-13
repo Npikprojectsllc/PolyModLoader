@@ -15,7 +15,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_latestCategory, _EditorExtras_latestBlock, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
+var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_latestCategory, _EditorExtras_latestBlock, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
@@ -58,6 +58,10 @@ export class PolyMod {
         * Function to run once game finishses loading
         */
         this.onGameLoad = () => { };
+        /**
+         * Whether the mod
+         */
+        this.offlineMode = false;
     }
     /**
      * The author of the mod.
@@ -307,6 +311,82 @@ export class EditorExtras {
     }
 }
 _EditorExtras_editorClass = new WeakMap(), _EditorExtras_latestCategory = new WeakMap(), _EditorExtras_latestBlock = new WeakMap(), _EditorExtras_categoryDefaults = new WeakMap(), _EditorExtras_simBlocks = new WeakMap(), _EditorExtras_modelUrls = new WeakMap();
+class PolyDB {
+    constructor() {
+        _PolyDB_instances.add(this);
+        _PolyDB_db.set(this, void 0);
+    }
+    async getMod(baseUrl) {
+        let localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
+        return await new Promise((resolve, reject) => {
+            if (!localDb) {
+                console.error("Database not initialized.");
+                return false;
+            }
+            const transaction = localDb.transaction("mods", "readonly");
+            const store = transaction?.objectStore("mods");
+            const request = store?.get(baseUrl);
+            if (!request) {
+                return null;
+            }
+            ;
+            request.onsuccess = () => resolve(request?.result || null);
+            request.onerror = () => reject(null);
+        });
+    }
+    async saveMod(baseUrl, version, manifest) {
+        const localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
+        if (!localDb) {
+            console.error("Database not initialized.");
+            return false;
+        }
+        const response = await fetch(`${baseUrl}/${version}/${manifest?.polymod.main}`);
+        const codeStr = await response.text();
+        return new Promise((resolve, reject) => {
+            const tx = localDb.transaction("mods", "readwrite");
+            const store = tx.objectStore("mods");
+            const request = store.put({ baseUrl, version, manifest, codeStr });
+            request.onsuccess = () => {
+                resolve(true);
+            };
+            request.onerror = () => {
+                console.error("Error saving mod:", request.error);
+                reject(request.error);
+            };
+        });
+    }
+}
+_PolyDB_db = new WeakMap(), _PolyDB_instances = new WeakSet(), _PolyDB_getDb = async function _PolyDB_getDb() {
+    return new Promise((resolve, reject) => {
+        if (__classPrivateFieldGet(this, _PolyDB_db, "f")) {
+            return resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
+        }
+        const DBOpenRequest = window.indexedDB.open("PMLMods");
+        DBOpenRequest.onerror = (event) => {
+            console.error("Error initializing database.");
+            return reject();
+        };
+        DBOpenRequest.onsuccess = (event) => {
+            console.log("Database initialized.");
+            __classPrivateFieldSet(this, _PolyDB_db, DBOpenRequest.result, "f");
+            return resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
+        };
+        DBOpenRequest.onupgradeneeded = (event) => {
+            // @ts-ignore For some reason it doesn't like this
+            __classPrivateFieldSet(this, _PolyDB_db, event.target?.result, "f");
+            if (!__classPrivateFieldGet(this, _PolyDB_db, "f")) {
+                console.error("Error initializing database.");
+                return reject();
+            }
+            __classPrivateFieldGet(this, _PolyDB_db, "f").onerror = (event) => {
+                console.error("Error initializing database.");
+            };
+            const objectStore = __classPrivateFieldGet(this, _PolyDB_db, "f").createObjectStore("mods", { keyPath: 'baseUrl' });
+            console.log("Object store created.");
+            return resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
+        };
+    });
+};
 export class PolyModLoader {
     constructor(polyVersion) {
         _PolyModLoader_instances.add(this);
@@ -352,6 +432,7 @@ export class PolyModLoader {
         __classPrivateFieldSet(this, _PolyModLoader_polyVersion, polyVersion, "f");
         /** @type {PolyMod[]} */
         __classPrivateFieldSet(this, _PolyModLoader_allMods, [], "f");
+        this.polyDb = new PolyDB();
         /** @type {boolean} */
         __classPrivateFieldSet(this, _PolyModLoader_physicsTouched, false, "f");
         /**
@@ -455,7 +536,7 @@ export class PolyModLoader {
         loadingUI.appendChild(progressDiv);
         loadingDiv.appendChild(loadingUI);
         ui.appendChild(loadingDiv);
-        const total = __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f").length;
+        const total = __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f") ? __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f").length : 0;
         const current = {
             num: 0,
             text: undefined,
@@ -545,9 +626,12 @@ export class PolyModLoader {
             updateBar(Math.floor(current.num) + 1);
         }
         // Actual mod importing
-        for (let polyModObject of __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f")) {
+        for (let polyModObject of __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f") ? __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f") : []) {
             startImportMod(polyModObject.base, polyModObject.version);
+            const dbMod = await this.polyDb.getMod(polyModObject.base);
             let latest = false;
+            let importFromDB = false;
+            ;
             current.totalParts = 2;
             if (polyModObject.version === "latest") {
                 current.totalParts = 3;
@@ -559,23 +643,36 @@ export class PolyModLoader {
                 }
                 catch (err) {
                     errorCurrent();
+                    importFromDB = true;
                     alert(`Couldn't find latest version for ${polyModObject.base}`);
                     console.error("Error in fetching latest version json:", err);
                 }
                 finishFetchLatest(polyModObject.version);
             }
+            if (dbMod && polyModObject.version === dbMod.version) {
+                console.log("Mod version in DB, skipping import");
+                importFromDB = true;
+            }
             const polyModUrl = `${polyModObject.base}/${polyModObject.version}`;
             startFetchManifest();
             try {
-                const manifestFile = await fetch(`${polyModUrl}/manifest.json`).then(r => r.json());
+                let manifestFile;
+                if (importFromDB && dbMod) {
+                    manifestFile = dbMod.manifest;
+                }
+                else {
+                    manifestFile = await fetch(`${polyModUrl}/manifest.json`).then(r => r.json());
+                }
                 let mod = manifestFile.polymod;
                 startFetchModMain(mod.main);
                 try {
-                    const modImport = await import(`${polyModUrl}/${mod.main}`);
+                    const modImport = await import(importFromDB && dbMod ? URL.createObjectURL(new Blob([dbMod.codeStr], { type: "application/javascript" })) : `${polyModUrl}/${mod.main}`);
                     let newMod = modImport.polyMod;
                     mod.version = polyModObject.version;
                     if (this.getMod(mod.id))
                         alert(`Duplicate mod detected: ${mod.name}`);
+                    newMod.manifest = manifestFile;
+                    newMod.offlineMode = importFromDB;
                     newMod.applyManifest(manifestFile);
                     newMod.baseUrl = polyModObject.base;
                     newMod.applyManifest = (nothing) => { console.warn("Can't apply manifest after initialization!"); };
@@ -606,7 +703,7 @@ export class PolyModLoader {
         loadingDiv.remove();
     }
     getPolyModsStorage() {
-        const polyModsStorage = this.localStorage.getItem("polyMods");
+        const polyModsStorage = this.localStorage?.getItem("polyMods");
         if (polyModsStorage) {
             __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, JSON.parse(polyModsStorage), "f");
         }
@@ -618,21 +715,22 @@ export class PolyModLoader {
                     "loaded": true
                 }
             ], "f");
-            this.localStorage.setItem("polyMods", JSON.stringify(__classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f")));
+            this.localStorage?.setItem("polyMods", JSON.stringify(__classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f")));
         }
         return __classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f");
     }
     serializeMod(mod) {
-        return { "base": mod.baseUrl, "version": mod.savedLatest ? "latest" : mod.version, "loaded": mod.isLoaded || false };
+        return { "base": mod.baseUrl ? mod.baseUrl : "", "version": mod.savedLatest ? "latest" : mod.version ? mod.version : "latest", "loaded": mod.isLoaded || false };
     }
     saveModsToLocalStorage() {
         let savedMods = [];
         for (let mod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
             const modSerialized = this.serializeMod(mod);
             savedMods.push(modSerialized);
+            this.polyDb.saveMod(modSerialized.base, mod.version || "", mod.manifest);
         }
         __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, savedMods, "f");
-        this.localStorage.setItem("polyMods", JSON.stringify(__classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f")));
+        this.localStorage?.setItem("polyMods", JSON.stringify(__classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f")));
     }
     /**
      * Reorder a mod in the internal list to change its priority in mod loading.
@@ -815,7 +913,7 @@ export class PolyModLoader {
         __classPrivateFieldGet(this, _PolyModLoader_instances, "m", _PolyModLoader_preInitPML).call(this);
         let initList = [];
         for (let polyMod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
-            if (polyMod.isLoaded)
+            if (polyMod.id && polyMod.isLoaded)
                 initList.push(polyMod.id);
         }
         if (initList.length === 0)
@@ -827,7 +925,7 @@ export class PolyModLoader {
                 continue;
             console.log(initList[0]);
             let initCheck = true;
-            for (let dependency of currentMod.dependencies) {
+            for (let dependency of currentMod.dependencies || []) {
                 let curDependency = this.getMod(dependency.id);
                 if (!curDependency) {
                     initCheck = false;
@@ -853,7 +951,7 @@ export class PolyModLoader {
                 if (!curDependency.initialized) {
                     initCheck = false;
                     initList.splice(0, 1);
-                    initList.push(currentMod.id);
+                    initList.push(currentMod.id || "");
                     break;
                 }
             }
