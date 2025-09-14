@@ -325,46 +325,51 @@ export class EditorExtras {
 
 class PolyDB { 
     #db: IDBDatabase | undefined;
-    constructor(){
-        
-    }
-    async #getDb() {
-        return new Promise<IDBDatabase>((resolve, reject) => {
-            if(this.#db) {
-                return resolve(this.#db);
+    dbUpgrading = false;
+    async #getDb(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        if (this.#db) {
+            return resolve(this.#db);
+        }
+
+        const DBOpenRequest = window.indexedDB.open("PMLMods", 1); // always set a version
+        DBOpenRequest.onerror = () => {
+            console.error("Error initializing database.");
+            reject(new Error("DB init failed"));
+        };
+
+        DBOpenRequest.onsuccess = () => {
+            console.log("Database initialized.");
+            this.#db = DBOpenRequest.result;
+            resolve(this.#db);
+        };
+
+        DBOpenRequest.onupgradeneeded = (event) => {
+            console.log("Upgrading...");
+            // @ts-ignore
+            this.#db = event.target.result as IDBDatabase;
+
+            if (!this.#db) {
+                return reject(new Error("Upgrade DB is null"));
             }
-            const DBOpenRequest = window.indexedDB.open("PMLMods");
-            DBOpenRequest.onerror = (event) => {
-                console.error("Error initializing database.");
-                return reject();
+
+            this.#db.onerror = () => {
+                console.error("Error during DB upgrade.");
             };
 
-            DBOpenRequest.onsuccess = (event) => {
-                console.log("Database initialized.")
-
-                this.#db = DBOpenRequest.result;
-                return resolve(this.#db);
-            };
-
-            DBOpenRequest.onupgradeneeded = (event: IDBVersionChangeEvent ) => {
-                // @ts-ignore For some reason it doesn't like this
-                this.#db = event.target?.result;
-
-                if(!this.#db){
-                    console.error("Error initializing database.");
-                    return reject();
-                }
-
-                this.#db.onerror = (event) => {
-                    console.error("Error initializing database.");
-                };
-
-                const objectStore = this.#db.createObjectStore("mods", { keyPath: 'baseUrl' });
+            if (!this.#db.objectStoreNames.contains("mods")) {
+                this.#db.createObjectStore("mods", { keyPath: "baseUrl" });
                 console.log("Object store created.");
-                return resolve(this.#db);
+            }
+
+            // @ts-ignore
+            event.target.transaction.oncomplete = () => {
+                console.log("Upgrade finished.");
+                resolve(this.#db!);
             };
-        });
-    }
+        };
+    });
+}
     async getMod(baseUrl: string) : Promise<{ baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }>}, codeStr: Blob } | null> {
         let localDb = await this.#getDb();
         return await new Promise((resolve, reject) => {
@@ -827,6 +832,7 @@ export class PolyModLoader {
                 newMod.iconSrc = `${polyModUrl}/icon.png`;
                 mod.version = polyModObject.version;
                 newMod.applyManifest(manifestFile);
+                newMod.manifest = manifestFile;
                 newMod.baseUrl = polyModObject.base;
                 newMod.applyManifest = (nothing:any) => { console.warn("Can't apply manifest after initialization!") }
                 newMod.savedLatest = latest;

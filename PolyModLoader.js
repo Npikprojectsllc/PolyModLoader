@@ -315,6 +315,7 @@ class PolyDB {
     constructor() {
         _PolyDB_instances.add(this);
         _PolyDB_db.set(this, void 0);
+        this.dbUpgrading = false;
     }
     async getMod(baseUrl) {
         let localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
@@ -361,29 +362,35 @@ _PolyDB_db = new WeakMap(), _PolyDB_instances = new WeakSet(), _PolyDB_getDb = a
         if (__classPrivateFieldGet(this, _PolyDB_db, "f")) {
             return resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
         }
-        const DBOpenRequest = window.indexedDB.open("PMLMods");
-        DBOpenRequest.onerror = (event) => {
+        const DBOpenRequest = window.indexedDB.open("PMLMods", 1); // always set a version
+        DBOpenRequest.onerror = () => {
             console.error("Error initializing database.");
-            return reject();
+            reject(new Error("DB init failed"));
         };
-        DBOpenRequest.onsuccess = (event) => {
+        DBOpenRequest.onsuccess = () => {
             console.log("Database initialized.");
             __classPrivateFieldSet(this, _PolyDB_db, DBOpenRequest.result, "f");
-            return resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
+            resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
         };
         DBOpenRequest.onupgradeneeded = (event) => {
-            // @ts-ignore For some reason it doesn't like this
-            __classPrivateFieldSet(this, _PolyDB_db, event.target?.result, "f");
+            console.log("Upgrading...");
+            // @ts-ignore
+            __classPrivateFieldSet(this, _PolyDB_db, event.target.result, "f");
             if (!__classPrivateFieldGet(this, _PolyDB_db, "f")) {
-                console.error("Error initializing database.");
-                return reject();
+                return reject(new Error("Upgrade DB is null"));
             }
-            __classPrivateFieldGet(this, _PolyDB_db, "f").onerror = (event) => {
-                console.error("Error initializing database.");
+            __classPrivateFieldGet(this, _PolyDB_db, "f").onerror = () => {
+                console.error("Error during DB upgrade.");
             };
-            const objectStore = __classPrivateFieldGet(this, _PolyDB_db, "f").createObjectStore("mods", { keyPath: 'baseUrl' });
-            console.log("Object store created.");
-            return resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
+            if (!__classPrivateFieldGet(this, _PolyDB_db, "f").objectStoreNames.contains("mods")) {
+                __classPrivateFieldGet(this, _PolyDB_db, "f").createObjectStore("mods", { keyPath: "baseUrl" });
+                console.log("Object store created.");
+            }
+            // @ts-ignore
+            event.target.transaction.oncomplete = () => {
+                console.log("Upgrade finished.");
+                resolve(__classPrivateFieldGet(this, _PolyDB_db, "f"));
+            };
         };
     });
 };
@@ -794,6 +801,7 @@ export class PolyModLoader {
                 newMod.iconSrc = `${polyModUrl}/icon.png`;
                 mod.version = polyModObject.version;
                 newMod.applyManifest(manifestFile);
+                newMod.manifest = manifestFile;
                 newMod.baseUrl = polyModObject.base;
                 newMod.applyManifest = (nothing) => { console.warn("Can't apply manifest after initialization!"); };
                 newMod.savedLatest = latest;
