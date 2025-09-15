@@ -312,10 +312,18 @@ export class EditorExtras {
 }
 _EditorExtras_editorClass = new WeakMap(), _EditorExtras_latestCategory = new WeakMap(), _EditorExtras_latestBlock = new WeakMap(), _EditorExtras_categoryDefaults = new WeakMap(), _EditorExtras_simBlocks = new WeakMap(), _EditorExtras_modelUrls = new WeakMap();
 class PolyDB {
-    constructor() {
+    constructor(pml) {
         _PolyDB_instances.add(this);
         _PolyDB_db.set(this, void 0);
+        this.cacheMods = true;
         this.dbUpgrading = false;
+        let settingList = pml.localStorage?.getItem("polytrack_v4_prod_settings");
+        console.log(settingList);
+        for (let setting in settingList) {
+            if (setting[0] == "pmlCacheMods") {
+                this.cacheMods = setting[1] == "true";
+            }
+        }
     }
     async getMod(baseUrl) {
         let localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
@@ -439,7 +447,7 @@ export class PolyModLoader {
         __classPrivateFieldSet(this, _PolyModLoader_polyVersion, polyVersion, "f");
         /** @type {PolyMod[]} */
         __classPrivateFieldSet(this, _PolyModLoader_allMods, [], "f");
-        this.polyDb = new PolyDB();
+        this.polyDb;
         /** @type {boolean} */
         __classPrivateFieldSet(this, _PolyModLoader_physicsTouched, false, "f");
         /**
@@ -475,8 +483,8 @@ export class PolyModLoader {
         return __classPrivateFieldGet(this, _PolyModLoader_polyVersion, "f"); // Why is this even private lmfao
     }
     initStorage(localStorage) {
-        /** @type {Storage} */
         this.localStorage = localStorage;
+        this.polyDb = new PolyDB(this);
         __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, this.getPolyModsStorage(), "f");
     }
     async importMods() {
@@ -650,13 +658,13 @@ export class PolyModLoader {
                 }
                 catch (err) {
                     errorCurrent();
-                    importFromDB = true;
+                    importFromDB = this.polyDb.cacheMods && true;
                     alert(`Couldn't find latest version for ${polyModObject.base}`);
                     console.error("Error in fetching latest version json:", err);
                 }
                 finishFetchLatest(polyModObject.version);
             }
-            if (dbMod && polyModObject.version === dbMod.version) {
+            if (this.polyDb.cacheMods && dbMod && polyModObject.version === dbMod.version) {
                 console.log("Mod version in DB, skipping import");
                 importFromDB = true;
             }
@@ -708,6 +716,7 @@ export class PolyModLoader {
             finishImportMod();
         }
         loadingDiv.remove();
+        this.saveModsToLocalStorage(); // Really just to initiate DB sync
     }
     getPolyModsStorage() {
         const polyModsStorage = this.localStorage?.getItem("polyMods");
@@ -1107,6 +1116,8 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, ` );`, ` );`, `),${__classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").join("")}null;`);
     this.registerClassMixin(`${Variables.EditorClass}.prototype`, "update", MixinType.INSERT, `y_(this, DM, b_(this, bS, "m", f_).call(this), "f"),`, `ActivePolyModLoader.editorExtras.construct(this),`);
 }, _PolyModLoader_preInitPML = function _PolyModLoader_preInitPML() {
+    this.registerSettingCategory("PolyModLoader");
+    this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
     this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`);
 };
 const ActivePolyModLoader = new PolyModLoader("0.5.1");

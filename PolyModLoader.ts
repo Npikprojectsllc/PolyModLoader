@@ -325,51 +325,61 @@ export class EditorExtras {
 
 class PolyDB { 
     #db: IDBDatabase | undefined;
+    cacheMods = true;
+    constructor(pml: PolyModLoader) {
+        let settingList = pml.localStorage?.getItem("polytrack_v4_prod_settings") as unknown as Array<Array<string>>;
+        console.log(settingList);
+        for(let setting in settingList){
+            if(setting[0] == "pmlCacheMods") {
+                this.cacheMods = setting[1] == "true";
+            }
+        }
+    }
     dbUpgrading = false;
     async #getDb(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        if (this.#db) {
-            return resolve(this.#db);
-        }
-
-        const DBOpenRequest = window.indexedDB.open("PMLMods", 1); // always set a version
-        DBOpenRequest.onerror = () => {
-            console.error("Error initializing database.");
-            reject(new Error("DB init failed"));
-        };
-
-        DBOpenRequest.onsuccess = () => {
-            console.log("Database initialized.");
-            this.#db = DBOpenRequest.result;
-            resolve(this.#db);
-        };
-
-        DBOpenRequest.onupgradeneeded = (event) => {
-            console.log("Upgrading...");
-            // @ts-ignore
-            this.#db = event.target.result as IDBDatabase;
-
-            if (!this.#db) {
-                return reject(new Error("Upgrade DB is null"));
+        return new Promise((resolve, reject) => {
+            if (this.#db) {
+                return resolve(this.#db);
             }
 
-            this.#db.onerror = () => {
-                console.error("Error during DB upgrade.");
+            const DBOpenRequest = window.indexedDB.open("PMLMods", 1); // always set a version
+            DBOpenRequest.onerror = () => {
+                console.error("Error initializing database.");
+                reject(new Error("DB init failed"));
             };
 
-            if (!this.#db.objectStoreNames.contains("mods")) {
-                this.#db.createObjectStore("mods", { keyPath: "baseUrl" });
-                console.log("Object store created.");
-            }
-
-            // @ts-ignore
-            event.target.transaction.oncomplete = () => {
-                console.log("Upgrade finished.");
-                resolve(this.#db!);
+            DBOpenRequest.onsuccess = () => {
+                console.log("Database initialized.");
+                this.#db = DBOpenRequest.result;
+                resolve(this.#db);
             };
-        };
-    });
-}
+
+            DBOpenRequest.onupgradeneeded = (event) => {
+                console.log("Upgrading...");
+                // @ts-ignore
+                this.#db = event.target.result as IDBDatabase;
+
+                if (!this.#db) {
+                    return reject(new Error("Upgrade DB is null"));
+                }
+
+                this.#db.onerror = () => {
+                    console.error("Error during DB upgrade.");
+                };
+
+                if (!this.#db.objectStoreNames.contains("mods")) {
+                    this.#db.createObjectStore("mods", { keyPath: "baseUrl" });
+                    console.log("Object store created.");
+                }
+
+                // @ts-ignore
+                event.target.transaction.oncomplete = () => {
+                    console.log("Upgrade finished.");
+                    resolve(this.#db!);
+                };
+            };
+        });
+    }
     async getMod(baseUrl: string) : Promise<{ baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }>}, codeStr: Blob } | null> {
         let localDb = await this.#getDb();
         return await new Promise((resolve, reject) => {
@@ -449,7 +459,7 @@ export class PolyModLoader {
         this.#polyVersion = polyVersion;
         /** @type {PolyMod[]} */
         this.#allMods = [];
-        this.polyDb = new PolyDB();
+        this.polyDb;
         /** @type {boolean} */
         this.#physicsTouched = false;
         /** 
@@ -489,8 +499,8 @@ export class PolyModLoader {
     localStorage: Storage | undefined;
     #polyModUrls: Array<{ base: string, version: string, loaded: boolean }> | undefined;
     initStorage(localStorage: Storage) {
-        /** @type {Storage} */
         this.localStorage = localStorage;
+        this.polyDb = new PolyDB(this);
         this.#polyModUrls = this.getPolyModsStorage();
     }
     async importMods() {
@@ -684,13 +694,13 @@ export class PolyModLoader {
                     latest = true;
                 } catch (err) {
                     errorCurrent();
-                    importFromDB = true;
+                    importFromDB = this.polyDb.cacheMods && true;
                     alert(`Couldn't find latest version for ${polyModObject.base}`);
                     console.error("Error in fetching latest version json:", err);
                 }
                 finishFetchLatest(polyModObject.version);
             }
-            if(dbMod && polyModObject.version === dbMod.version) {
+            if(this.polyDb.cacheMods && dbMod && polyModObject.version === dbMod.version) {
                 console.log("Mod version in DB, skipping import")
                 importFromDB = true;
             }
@@ -741,6 +751,7 @@ export class PolyModLoader {
         }
 
         loadingDiv.remove();
+        this.saveModsToLocalStorage(); // Really just to initiate DB sync
     }
     getPolyModsStorage() {
         const polyModsStorage = this.localStorage?.getItem("polyMods");
@@ -957,6 +968,8 @@ export class PolyModLoader {
     }
     popUpClass: any;
     #preInitPML() {
+        this.registerSettingCategory("PolyModLoader");
+        this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
         this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`)
     }
     initMods() {
