@@ -336,6 +336,22 @@ class PolyDB {
         }
     }
     dbUpgrading = false;
+    async syncMods(modList: Array<{ base: string, version: string, loaded: boolean }>, pmlModList: Array<PolyMod>) {
+        let localDb = await this.#getDb();
+        await new Promise((resolve, reject) => {
+            const transaction = localDb.transaction("mods", "readwrite");
+            const store = transaction?.objectStore("mods");
+            const request = store?.clear();
+            if(!request) { return reject(null); };
+            request.onsuccess = () => resolve(request?.result || null );
+            request.onerror = () => reject(request?.result || null);
+        });
+        for(let index = 0; index < modList.length; index++) {
+            const modSerialized = modList[index];
+            const mod = pmlModList[index];
+            this.saveMod(modSerialized.base, mod.version || "", mod.manifest);
+        }
+    }
     async #getDb(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
             if (this.#db) {
@@ -777,8 +793,8 @@ export class PolyModLoader {
         for (let mod of this.#allMods) {
             const modSerialized = this.serializeMod(mod);
             savedMods.push(modSerialized);
-            this.polyDb.saveMod(modSerialized.base, mod.version || "", mod.manifest);
         }
+        this.polyDb.syncMods(savedMods, this.#allMods);
         this.#polyModUrls = savedMods;
         this.localStorage?.setItem("polyMods", JSON.stringify(this.#polyModUrls));
     }

@@ -325,6 +325,25 @@ class PolyDB {
             }
         }
     }
+    async syncMods(modList, pmlModList) {
+        let localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
+        await new Promise((resolve, reject) => {
+            const transaction = localDb.transaction("mods", "readwrite");
+            const store = transaction?.objectStore("mods");
+            const request = store?.clear();
+            if (!request) {
+                return reject(null);
+            }
+            ;
+            request.onsuccess = () => resolve(request?.result || null);
+            request.onerror = () => reject(request?.result || null);
+        });
+        for (let index = 0; index < modList.length; index++) {
+            const modSerialized = modList[index];
+            const mod = pmlModList[index];
+            this.saveMod(modSerialized.base, mod.version || "", mod.manifest);
+        }
+    }
     async getMod(baseUrl) {
         let localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
         return await new Promise((resolve, reject) => {
@@ -743,8 +762,8 @@ export class PolyModLoader {
         for (let mod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
             const modSerialized = this.serializeMod(mod);
             savedMods.push(modSerialized);
-            this.polyDb.saveMod(modSerialized.base, mod.version || "", mod.manifest);
         }
+        this.polyDb.syncMods(savedMods, __classPrivateFieldGet(this, _PolyModLoader_allMods, "f"));
         __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, savedMods, "f");
         this.localStorage?.setItem("polyMods", JSON.stringify(__classPrivateFieldGet(this, _PolyModLoader_polyModUrls, "f")));
     }
