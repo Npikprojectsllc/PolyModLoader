@@ -1,0 +1,9 @@
+{
+    "shortdesc": "The core of PolyModLoader, adds an interface to manage mods.",
+    "changelogs": {
+        "1.0.0": ["Initial release"],
+        "1.0.1": ["Added electron update checker"],
+        "1.0.2": ["Ported to PolyTrack 0.5.1"],
+        "1.0.3": ["Fixed UI getting shown when it should stay hidden."]
+    }
+}
