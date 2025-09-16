@@ -5,7 +5,7 @@ bl_info = {
     "blender": (2, 80, 0),
     "description": "Convert between Blender and PolyTrack coordinates and auto-generate highlight cubes",
     "category": "Object",
-}
+} 
 
 import bpy
 import bmesh
