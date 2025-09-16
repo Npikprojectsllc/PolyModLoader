@@ -339,12 +339,16 @@ class PolyDB {
     async syncMods(modList: Array<{ base: string, version: string, loaded: boolean }>, pmlModList: Array<PolyMod>) {
         let localDb = await this.#getDb();
         await new Promise((resolve, reject) => {
-            const transaction = localDb.transaction("mods", "readwrite");
-            const store = transaction?.objectStore("mods");
-            const request = store?.clear();
-            if(!request) { return reject(null); };
-            request.onsuccess = () => resolve(request?.result || null );
-            request.onerror = () => reject(request?.result || null);
+            try {
+                const transaction = localDb.transaction("mods", "readwrite");
+                const store = transaction?.objectStore("mods");
+                const request = store?.clear();
+                if(!request) { return reject(null); };
+                request.onsuccess = () => resolve(request?.result || null );
+                request.onerror = () => reject(request?.result || null);
+            } catch (err){ 
+                reject(err);
+            }
         });
         for(let index = 0; index < modList.length; index++) {
             const modSerialized = modList[index];

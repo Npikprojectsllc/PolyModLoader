@@ -328,15 +328,20 @@ class PolyDB {
     async syncMods(modList, pmlModList) {
         let localDb = await __classPrivateFieldGet(this, _PolyDB_instances, "m", _PolyDB_getDb).call(this);
         await new Promise((resolve, reject) => {
-            const transaction = localDb.transaction("mods", "readwrite");
-            const store = transaction?.objectStore("mods");
-            const request = store?.clear();
-            if (!request) {
-                return reject(null);
+            try {
+                const transaction = localDb.transaction("mods", "readwrite");
+                const store = transaction?.objectStore("mods");
+                const request = store?.clear();
+                if (!request) {
+                    return reject(null);
+                }
+                ;
+                request.onsuccess = () => resolve(request?.result || null);
+                request.onerror = () => reject(request?.result || null);
             }
-            ;
-            request.onsuccess = () => resolve(request?.result || null);
-            request.onerror = () => reject(request?.result || null);
+            catch (err) {
+                reject(err);
+            }
         });
         for (let index = 0; index < modList.length; index++) {
             const modSerialized = modList[index];
