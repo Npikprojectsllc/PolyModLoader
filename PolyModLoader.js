@@ -15,7 +15,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_latestCategory, _EditorExtras_latestBlock, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
+var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_latestCategory, _EditorExtras_latestBlock, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_pmlVersion, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
@@ -427,7 +427,7 @@ _PolyDB_db = new WeakMap(), _PolyDB_instances = new WeakSet(), _PolyDB_getDb = a
     });
 };
 export class PolyModLoader {
-    constructor(polyVersion) {
+    constructor(polyVersion, pmlVersion) {
         _PolyModLoader_instances.add(this);
         _PolyModLoader_polyVersion.set(this, void 0);
         _PolyModLoader_allMods.set(this, void 0);
@@ -442,6 +442,7 @@ export class PolyModLoader {
         _PolyModLoader_defaultBinds.set(this, void 0);
         _PolyModLoader_bindConstructor.set(this, void 0);
         _PolyModLoader_latestBinding.set(this, void 0);
+        _PolyModLoader_pmlVersion.set(this, void 0);
         _PolyModLoader_polyModUrls.set(this, void 0);
         this.gameLoadCalled = false;
         this.getFromPolyTrack = (path) => { };
@@ -467,11 +468,11 @@ export class PolyModLoader {
          */
         this.registerFuncMixin = (path, mixinType, accessors, func, extraOptinonal) => { };
         this.registerClassWideMixin = (path, mixinType, firstToken, funcOrSecondToken, funcOptional) => { };
+        __classPrivateFieldSet(this, _PolyModLoader_pmlVersion, pmlVersion, "f");
         /** @type {string} */
         __classPrivateFieldSet(this, _PolyModLoader_polyVersion, polyVersion, "f");
         /** @type {PolyMod[]} */
         __classPrivateFieldSet(this, _PolyModLoader_allMods, [], "f");
-        this.polyDb;
         /** @type {boolean} */
         __classPrivateFieldSet(this, _PolyModLoader_physicsTouched, false, "f");
         /**
@@ -1129,7 +1130,7 @@ export class PolyModLoader {
         });
     }
 }
-_PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap(), _PolyModLoader_physicsTouched = new WeakMap(), _PolyModLoader_simWorkerClassMixins = new WeakMap(), _PolyModLoader_simWorkerFuncMixins = new WeakMap(), _PolyModLoader_settings = new WeakMap(), _PolyModLoader_settingConstructor = new WeakMap(), _PolyModLoader_defaultSettings = new WeakMap(), _PolyModLoader_latestSetting = new WeakMap(), _PolyModLoader_keybindings = new WeakMap(), _PolyModLoader_defaultBinds = new WeakMap(), _PolyModLoader_bindConstructor = new WeakMap(), _PolyModLoader_latestBinding = new WeakMap(), _PolyModLoader_polyModUrls = new WeakMap(), _PolyModLoader_instances = new WeakSet(), _PolyModLoader_applySettings = function _PolyModLoader_applySettings() {
+_PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap(), _PolyModLoader_physicsTouched = new WeakMap(), _PolyModLoader_simWorkerClassMixins = new WeakMap(), _PolyModLoader_simWorkerFuncMixins = new WeakMap(), _PolyModLoader_settings = new WeakMap(), _PolyModLoader_settingConstructor = new WeakMap(), _PolyModLoader_defaultSettings = new WeakMap(), _PolyModLoader_latestSetting = new WeakMap(), _PolyModLoader_keybindings = new WeakMap(), _PolyModLoader_defaultBinds = new WeakMap(), _PolyModLoader_bindConstructor = new WeakMap(), _PolyModLoader_latestBinding = new WeakMap(), _PolyModLoader_pmlVersion = new WeakMap(), _PolyModLoader_polyModUrls = new WeakMap(), _PolyModLoader_instances = new WeakSet(), _PolyModLoader_applySettings = function _PolyModLoader_applySettings() {
     this.registerClassMixin(`${Variables.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `ActivePolyModLoader.soundManager = new SoundManager(this);`);
     this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `() {`, `ActivePolyModLoader.settingClass = this;${__classPrivateFieldGet(this, _PolyModLoader_settingConstructor, "f").join("")}`);
     this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `[${Variables.SettingEnum}.CheckpointVolume, "1"]`, __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").join(""));
@@ -1140,9 +1141,16 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, ` );`, ` );`, `),${__classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").join("")}null;`);
     this.registerClassMixin(`${Variables.EditorClass}.prototype`, "update", MixinType.INSERT, `y_(this, DM, b_(this, bS, "m", f_).call(this), "f"),`, `ActivePolyModLoader.editorExtras.construct(this),`);
 }, _PolyModLoader_preInitPML = function _PolyModLoader_preInitPML() {
+    this.registerFuncMixin("AN", MixinType.INSERT, `TN(this, iN, "f").appendChild(t);`, `
+            const text = document.createElement("a");
+            text.href = "https://polymodloader.com";
+            text.target = "_blank";
+            text.textContent = "polymodloader.com - " + e.get("Version") + " " + "${__classPrivateFieldGet(this, _PolyModLoader_pmlVersion, "f")}";
+            TN(this, iN, "f").appendChild(text);
+        `);
     this.registerSettingCategory("PolyModLoader");
     this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
     this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`);
 };
-const ActivePolyModLoader = new PolyModLoader("0.5.1");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-1");
 export { ActivePolyModLoader };

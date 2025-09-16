@@ -445,6 +445,7 @@ class PolyDB {
 export class PolyModLoader {
     #polyVersion: string;
     #allMods: Array<PolyMod>;
+    // @ts-ignore
     polyDb: PolyDB;
     editorExtras: EditorExtras;
     #physicsTouched: boolean;
@@ -473,13 +474,14 @@ export class PolyModLoader {
     #defaultBinds: Array<string>
     #bindConstructor: Array<string>
     #latestBinding: number;
+    #pmlVersion: string;
 
-    constructor(polyVersion: string) {
+    constructor(polyVersion: string, pmlVersion: string) {
+        this.#pmlVersion = pmlVersion;
         /** @type {string} */
         this.#polyVersion = polyVersion;
         /** @type {PolyMod[]} */
         this.#allMods = [];
-        this.polyDb;
         /** @type {boolean} */
         this.#physicsTouched = false;
         /** 
@@ -988,6 +990,13 @@ export class PolyModLoader {
     }
     popUpClass: any;
     #preInitPML() {
+        this.registerFuncMixin("AN", MixinType.INSERT, `TN(this, iN, "f").appendChild(t);`, `
+            const text = document.createElement("a");
+            text.href = "https://polymodloader.com";
+            text.target = "_blank";
+            text.textContent = "polymodloader.com - " + e.get("Version") + " " + "${this.#pmlVersion}";
+            TN(this, iN, "f").appendChild(text);
+        `)
         this.registerSettingCategory("PolyModLoader");
         this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
         this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`)
@@ -1189,6 +1198,6 @@ export class PolyModLoader {
     }
 }
 
-const ActivePolyModLoader = new PolyModLoader("0.5.1");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-1");
 
 export { ActivePolyModLoader }
