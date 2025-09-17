@@ -346,7 +346,12 @@ class PolyDB {
         for (let index = 0; index < modList.length; index++) {
             const modSerialized = modList[index];
             const mod = pmlModList[index];
-            this.saveMod(modSerialized.base, mod.version || "", mod.manifest);
+            try {
+                this.saveMod(modSerialized.base, mod.version || "", mod.manifest);
+            }
+            catch {
+                console.warn("Couldn't save mod to DB:", modSerialized.base);
+            }
         }
     }
     async getMod(baseUrl) {
@@ -1152,5 +1157,5 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
     this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`);
 };
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-1");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-2");
 export { ActivePolyModLoader };
