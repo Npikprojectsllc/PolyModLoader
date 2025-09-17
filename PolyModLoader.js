@@ -1157,5 +1157,5 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
     this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`);
 };
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-2");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-3");
 export { ActivePolyModLoader };
