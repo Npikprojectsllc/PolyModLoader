@@ -304,14 +304,14 @@ export class EditorExtras {
         this.#latestBlock++;
         this.pml.getFromPolyTrack(`Sb[Sb.${id} = ${this.#latestBlock}]  =  "${id}"`);
         this.pml.getFromPolyTrack(`VA.push(new HA("${checksum}",RA.${categoryId},Sb.${id},[["${sceneName}", "${modelName}"]],FA,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: DA.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
-        this.pml.getFromPolyTrack(`GA.clear();for (const e of VA) {if (!GA.has(e.id)){ GA.set(e.id, e);}; }
-      `);
+        this.pml.getFromPolyTrack(`GA.clear();for (const e of VA) {if (!GA.has(e.id)){ GA.set(e.id, e);}; }`);
         if (extraSettings && extraSettings.ignoreOnExport) {
             this.ignoredBlocks.push(this.blockNumberFromId(id));
             return;
         }
         this.#simBlocks.push(`dd[dd.${id} = ${this.#latestBlock}]  =  "${id}"`);
         this.#simBlocks.push(`xv.push(new yv("${checksum}",fv.${categoryId},dd.${id},[["${sceneName}", "${modelName}"]],vv,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: qh.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
+        this.#simBlocks.push(`bv.clear();for (const e of xv) {if (!bv.has(e.id)){ bv.set(e.id, e);}; }`);
     }
     init() {
         this.pml.registerClassMixin("eU.prototype",
