@@ -37621,7 +37621,8 @@ const MixinType = Object.freeze({
       (onmessage = (e) => {
         lw.push(e);
       }),
-        Ammo().then(function (e) {
+        Ammo().then(ammoFunc);
+        ammoFunc = function (e) {
           return ow(this, void 0, void 0, function* () {
             yield (function () {
               return E_(this, void 0, void 0, function* () {
@@ -38164,6 +38165,6 @@ const MixinType = Object.freeze({
               postMessage({ messageType: Q_.UpdateResult, carStates: t });
             }
           });
-        });
+        }
     });
 })();
