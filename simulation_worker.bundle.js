@@ -38166,6 +38166,12 @@ const MixinType = Object.freeze({
             }
           });
         }
+        for(let data of mixinData.data.classMixins) {
+            registerClassMixin(data.scope, data.path, data.mixinType, data.accessors, data.funcString, data.func2Sstring);
+        }
+        for(let data of mixinData.data.funcMixins) {
+            registerFuncMixin(data.path, data.mixinType, data.accessors, data.funcString, data.func2Sstring);
+        }
         Ammo().then(ammoFunc);
     });
 })();
