@@ -470,10 +470,12 @@ export class PolyModLoader {
     #settings: Array<string>
     #settingConstructor: Array<string>
     #defaultSettings: Array<string>
+    #latestSetting: number;
 
     #keybindings: Array<string>
     #defaultBinds: Array<string>
     #bindConstructor: Array<string>
+    #latestBinding: number;
     #pmlVersion: string;
 
     constructor(polyVersion: string, pmlVersion: string) {
@@ -507,10 +509,12 @@ export class PolyModLoader {
         this.#settings = [];
         this.#settingConstructor = [];
         this.#defaultSettings = [];
+        this.#latestSetting = 18;
 
         this.#keybindings = []
         this.#defaultBinds = []
         this.#bindConstructor = []
+        this.#latestBinding = 31;
         this.editorExtras = new EditorExtras(this);
     }
     get polyVersion() {
@@ -887,8 +891,8 @@ export class PolyModLoader {
         this.#keybindings.push(`MR(this, iR, "m", AR).call(this, MR(this, aR, "f").get("${name}")),`);
     }
     registerSetting(name: string, id: string, type: SettingType, defaultOption: any, optionsOptional?: Array<{ title: string, value: string }>) {
-        let latestSetting = (Object.keys(this.getFromPolyTrack(Variables.SettingEnum)).length/2)+2
-        this.#settingConstructor.push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${latestSetting}] = "${id}";`);
+        this.#latestSetting++
+        this.#settingConstructor.push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${this.#latestSetting}] = "${id}";`);
         if (type === "boolean") {
             this.#defaultSettings.push(`, [${Variables.SettingEnum}.${id}, "${defaultOption ? "true" : "false"}"]`)
             this.#settings.push(`
@@ -923,10 +927,10 @@ export class PolyModLoader {
     settingClass: any;
     soundManager: SoundManager | undefined;
     registerKeybind(name: string, id: string, event: string, defaultBind: string, secondBindOptional: string | null, callback: Function) {
-        let latestBinding = (Object.keys(this.getFromPolyTrack(Variables.KeybindEnum)).length/2)+2
         this.#keybindings.push(`MR(this, iR, "m", ER).call(this, MR(this, aR, "f").get("${name}"), ${Variables.KeybindEnum}.${id}),`);
-        this.#bindConstructor.push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${latestBinding}] = "${id}";`);
+        this.#bindConstructor.push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${this.#latestBinding}] = "${id}";`);
         this.#defaultBinds.push(`, [${Variables.KeybindEnum}.${id}, ["${defaultBind}", ${secondBindOptional ? `"${secondBindOptional}"` : "null"}]]`);
+        this.#latestBinding++;
         window.addEventListener(event, (e) => {
             if (this.settingClass.checkKeyBinding(e, this.getFromPolyTrack(`${Variables.KeybindEnum}.${id}`))) {
                 callback(e)
