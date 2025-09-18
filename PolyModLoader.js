@@ -15,7 +15,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_latestCategory, _EditorExtras_latestBlock, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_pmlVersion, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
+var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_pmlVersion, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
@@ -260,8 +260,6 @@ _SoundManager_soundClass = new WeakMap();
 export class EditorExtras {
     constructor(pml) {
         _EditorExtras_editorClass.set(this, void 0);
-        _EditorExtras_latestCategory.set(this, 8);
-        _EditorExtras_latestBlock.set(this, 155);
         _EditorExtras_categoryDefaults.set(this, []);
         this.ignoredBlocks = [];
         _EditorExtras_simBlocks.set(this, []);
@@ -284,23 +282,21 @@ export class EditorExtras {
         __classPrivateFieldGet(this, _EditorExtras_modelUrls, "f").push(url);
     }
     registerCategory(id, defaultId) {
-        var _a;
-        __classPrivateFieldSet(this, _EditorExtras_latestCategory, (_a = __classPrivateFieldGet(this, _EditorExtras_latestCategory, "f"), _a++, _a), "f");
-        this.pml.getFromPolyTrack(`RA[RA.${id} = ${__classPrivateFieldGet(this, _EditorExtras_latestCategory, "f")}]  =  "${id}"`);
-        __classPrivateFieldGet(this, _EditorExtras_simBlocks, "f").push(`fv[fv.${id} = ${__classPrivateFieldGet(this, _EditorExtras_latestCategory, "f")}]  =  "${id}"`);
+        let latestCategory = (Object.keys(this.pml.getFromPolyTrack("RA")).length / 2) + 2;
+        this.pml.getFromPolyTrack(`RA[RA.${id} = ${latestCategory}]  =  "${id}"`);
+        __classPrivateFieldGet(this, _EditorExtras_simBlocks, "f").push(`fv[fv.${id} = ${latestCategory}]  =  "${id}"`);
         __classPrivateFieldGet(this, _EditorExtras_categoryDefaults, "f").push(`case RA.${id}:n = this.getPart(Sb.${defaultId});break;`);
     }
     registerBlock(id, categoryId, checksum, sceneName, modelName, overlapSpace, extraSettings) {
-        var _a;
-        __classPrivateFieldSet(this, _EditorExtras_latestBlock, (_a = __classPrivateFieldGet(this, _EditorExtras_latestBlock, "f"), _a++, _a), "f");
-        this.pml.getFromPolyTrack(`Sb[Sb.${id} = ${__classPrivateFieldGet(this, _EditorExtras_latestBlock, "f")}]  =  "${id}"`);
+        let latestBlock = (Object.keys(this.pml.getFromPolyTrack("Sb")).length / 2) + 2;
+        this.pml.getFromPolyTrack(`Sb[Sb.${id} = ${latestBlock}]  =  "${id}"`);
         this.pml.getFromPolyTrack(`VA.push(new HA("${checksum}",RA.${categoryId},Sb.${id},[["${sceneName}", "${modelName}"]],FA,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: DA.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
         this.pml.getFromPolyTrack(`GA.clear();for (const e of VA) {if (!GA.has(e.id)){ GA.set(e.id, e);}; }`);
         if (extraSettings && extraSettings.ignoreOnExport) {
             this.ignoredBlocks.push(this.blockNumberFromId(id));
             return;
         }
-        __classPrivateFieldGet(this, _EditorExtras_simBlocks, "f").push(`dd[dd.${id} = ${__classPrivateFieldGet(this, _EditorExtras_latestBlock, "f")}]  =  "${id}"`);
+        __classPrivateFieldGet(this, _EditorExtras_simBlocks, "f").push(`dd[dd.${id} = ${latestBlock}]  =  "${id}"`);
         __classPrivateFieldGet(this, _EditorExtras_simBlocks, "f").push(`xv.push(new yv("${checksum}",fv.${categoryId},dd.${id},[["${sceneName}", "${modelName}"]],vv,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: qh.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
         __classPrivateFieldGet(this, _EditorExtras_simBlocks, "f").push(`bv.clear();for (const e of xv) {if (!bv.has(e.id)){ bv.set(e.id, e);}; }`);
     }
@@ -310,7 +306,7 @@ export class EditorExtras {
         this.pml.registerClassMixin("eU.prototype", "getCategoryMesh", MixinType.INSERT, "n = this.getPart(Sb.SignArrowLeft);", `break;${__classPrivateFieldGet(this, _EditorExtras_categoryDefaults, "f").join("")}`);
     }
 }
-_EditorExtras_editorClass = new WeakMap(), _EditorExtras_latestCategory = new WeakMap(), _EditorExtras_latestBlock = new WeakMap(), _EditorExtras_categoryDefaults = new WeakMap(), _EditorExtras_simBlocks = new WeakMap(), _EditorExtras_modelUrls = new WeakMap();
+_EditorExtras_editorClass = new WeakMap(), _EditorExtras_categoryDefaults = new WeakMap(), _EditorExtras_simBlocks = new WeakMap(), _EditorExtras_modelUrls = new WeakMap();
 class PolyDB {
     constructor(pml) {
         _PolyDB_instances.add(this);
@@ -442,11 +438,9 @@ export class PolyModLoader {
         _PolyModLoader_settings.set(this, void 0);
         _PolyModLoader_settingConstructor.set(this, void 0);
         _PolyModLoader_defaultSettings.set(this, void 0);
-        _PolyModLoader_latestSetting.set(this, void 0);
         _PolyModLoader_keybindings.set(this, void 0);
         _PolyModLoader_defaultBinds.set(this, void 0);
         _PolyModLoader_bindConstructor.set(this, void 0);
-        _PolyModLoader_latestBinding.set(this, void 0);
         _PolyModLoader_pmlVersion.set(this, void 0);
         _PolyModLoader_polyModUrls.set(this, void 0);
         this.gameLoadCalled = false;
@@ -502,11 +496,9 @@ export class PolyModLoader {
         __classPrivateFieldSet(this, _PolyModLoader_settings, [], "f");
         __classPrivateFieldSet(this, _PolyModLoader_settingConstructor, [], "f");
         __classPrivateFieldSet(this, _PolyModLoader_defaultSettings, [], "f");
-        __classPrivateFieldSet(this, _PolyModLoader_latestSetting, 18, "f");
         __classPrivateFieldSet(this, _PolyModLoader_keybindings, [], "f");
         __classPrivateFieldSet(this, _PolyModLoader_defaultBinds, [], "f");
         __classPrivateFieldSet(this, _PolyModLoader_bindConstructor, [], "f");
-        __classPrivateFieldSet(this, _PolyModLoader_latestBinding, 31, "f");
         this.editorExtras = new EditorExtras(this);
     }
     get polyVersion() {
@@ -866,9 +858,8 @@ export class PolyModLoader {
         __classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").push(`MR(this, iR, "m", AR).call(this, MR(this, aR, "f").get("${name}")),`);
     }
     registerSetting(name, id, type, defaultOption, optionsOptional) {
-        var _a;
-        __classPrivateFieldSet(this, _PolyModLoader_latestSetting, (_a = __classPrivateFieldGet(this, _PolyModLoader_latestSetting, "f"), _a++, _a), "f");
-        __classPrivateFieldGet(this, _PolyModLoader_settingConstructor, "f").push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${__classPrivateFieldGet(this, _PolyModLoader_latestSetting, "f")}] = "${id}";`);
+        let latestSetting = (Object.keys(this.getFromPolyTrack(Variables.SettingEnum)).length / 2) + 2;
+        __classPrivateFieldGet(this, _PolyModLoader_settingConstructor, "f").push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${latestSetting}] = "${id}";`);
         if (type === "boolean") {
             __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`, [${Variables.SettingEnum}.${id}, "${defaultOption ? "true" : "false"}"]`);
             __classPrivateFieldGet(this, _PolyModLoader_settings, "f").push(`
@@ -903,11 +894,10 @@ export class PolyModLoader {
         }
     }
     registerKeybind(name, id, event, defaultBind, secondBindOptional, callback) {
-        var _a;
+        let latestBinding = (Object.keys(this.getFromPolyTrack(Variables.KeybindEnum)).length / 2) + 2;
         __classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").push(`MR(this, iR, "m", ER).call(this, MR(this, aR, "f").get("${name}"), ${Variables.KeybindEnum}.${id}),`);
-        __classPrivateFieldGet(this, _PolyModLoader_bindConstructor, "f").push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${__classPrivateFieldGet(this, _PolyModLoader_latestBinding, "f")}] = "${id}";`);
+        __classPrivateFieldGet(this, _PolyModLoader_bindConstructor, "f").push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${latestBinding}] = "${id}";`);
         __classPrivateFieldGet(this, _PolyModLoader_defaultBinds, "f").push(`, [${Variables.KeybindEnum}.${id}, ["${defaultBind}", ${secondBindOptional ? `"${secondBindOptional}"` : "null"}]]`);
-        __classPrivateFieldSet(this, _PolyModLoader_latestBinding, (_a = __classPrivateFieldGet(this, _PolyModLoader_latestBinding, "f"), _a++, _a), "f");
         window.addEventListener(event, (e) => {
             if (this.settingClass.checkKeyBinding(e, this.getFromPolyTrack(`${Variables.KeybindEnum}.${id}`))) {
                 callback(e);
@@ -1135,7 +1125,7 @@ export class PolyModLoader {
         });
     }
 }
-_PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap(), _PolyModLoader_physicsTouched = new WeakMap(), _PolyModLoader_simWorkerClassMixins = new WeakMap(), _PolyModLoader_simWorkerFuncMixins = new WeakMap(), _PolyModLoader_settings = new WeakMap(), _PolyModLoader_settingConstructor = new WeakMap(), _PolyModLoader_defaultSettings = new WeakMap(), _PolyModLoader_latestSetting = new WeakMap(), _PolyModLoader_keybindings = new WeakMap(), _PolyModLoader_defaultBinds = new WeakMap(), _PolyModLoader_bindConstructor = new WeakMap(), _PolyModLoader_latestBinding = new WeakMap(), _PolyModLoader_pmlVersion = new WeakMap(), _PolyModLoader_polyModUrls = new WeakMap(), _PolyModLoader_instances = new WeakSet(), _PolyModLoader_applySettings = function _PolyModLoader_applySettings() {
+_PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap(), _PolyModLoader_physicsTouched = new WeakMap(), _PolyModLoader_simWorkerClassMixins = new WeakMap(), _PolyModLoader_simWorkerFuncMixins = new WeakMap(), _PolyModLoader_settings = new WeakMap(), _PolyModLoader_settingConstructor = new WeakMap(), _PolyModLoader_defaultSettings = new WeakMap(), _PolyModLoader_keybindings = new WeakMap(), _PolyModLoader_defaultBinds = new WeakMap(), _PolyModLoader_bindConstructor = new WeakMap(), _PolyModLoader_pmlVersion = new WeakMap(), _PolyModLoader_polyModUrls = new WeakMap(), _PolyModLoader_instances = new WeakSet(), _PolyModLoader_applySettings = function _PolyModLoader_applySettings() {
     this.registerClassMixin(`${Variables.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `ActivePolyModLoader.soundManager = new SoundManager(this);`);
     this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `() {`, `ActivePolyModLoader.settingClass = this;${__classPrivateFieldGet(this, _PolyModLoader_settingConstructor, "f").join("")}`);
     this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `[${Variables.SettingEnum}.CheckpointVolume, "1"]`, __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").join(""));

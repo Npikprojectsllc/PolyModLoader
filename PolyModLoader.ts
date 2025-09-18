@@ -264,8 +264,6 @@ export class SoundManager {
 export class EditorExtras {
     #editorClass: any;
     pml: PolyModLoader;
-    #latestCategory: number = 8;
-    #latestBlock: number = 155;
     #categoryDefaults: Array<string> = []
     ignoredBlocks: Array<number> = [];
     #simBlocks: Array<string> = [];
@@ -294,22 +292,22 @@ export class EditorExtras {
     }
 
     registerCategory(id: string, defaultId: string) {
-        this.#latestCategory++;
-        this.pml.getFromPolyTrack(`RA[RA.${id} = ${this.#latestCategory}]  =  "${id}"`);
-        this.#simBlocks.push(`fv[fv.${id} = ${this.#latestCategory}]  =  "${id}"`);
+        let latestCategory = (Object.keys(this.pml.getFromPolyTrack("RA")).length/2)+2
+        this.pml.getFromPolyTrack(`RA[RA.${id} = ${latestCategory}]  =  "${id}"`);
+        this.#simBlocks.push(`fv[fv.${id} = ${latestCategory}]  =  "${id}"`);
         this.#categoryDefaults.push(`case RA.${id}:n = this.getPart(Sb.${defaultId});break;`)
     }
 
     registerBlock(id: string, categoryId: string, checksum: string, sceneName: string, modelName: string, overlapSpace: Array<Array<Array<number>>>, extraSettings?: { ignoreOnExport?: boolean, specialSettings?: { type: string, center: Array<number>, size: Array<number> } }) {
-        this.#latestBlock++;
-        this.pml.getFromPolyTrack(`Sb[Sb.${id} = ${this.#latestBlock}]  =  "${id}"`);
+        let latestBlock = (Object.keys(this.pml.getFromPolyTrack("Sb")).length/2)+2
+        this.pml.getFromPolyTrack(`Sb[Sb.${id} = ${latestBlock}]  =  "${id}"`);
         this.pml.getFromPolyTrack(`VA.push(new HA("${checksum}",RA.${categoryId},Sb.${id},[["${sceneName}", "${modelName}"]],FA,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: DA.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
         this.pml.getFromPolyTrack(`GA.clear();for (const e of VA) {if (!GA.has(e.id)){ GA.set(e.id, e);}; }`);
         if (extraSettings && extraSettings.ignoreOnExport) {
             this.ignoredBlocks.push(this.blockNumberFromId(id));
             return;
         }
-        this.#simBlocks.push(`dd[dd.${id} = ${this.#latestBlock}]  =  "${id}"`);
+        this.#simBlocks.push(`dd[dd.${id} = ${latestBlock}]  =  "${id}"`);
         this.#simBlocks.push(`xv.push(new yv("${checksum}",fv.${categoryId},dd.${id},[["${sceneName}", "${modelName}"]],vv,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: qh.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
         this.#simBlocks.push(`bv.clear();for (const e of xv) {if (!bv.has(e.id)){ bv.set(e.id, e);}; }`);
     }
@@ -472,12 +470,10 @@ export class PolyModLoader {
     #settings: Array<string>
     #settingConstructor: Array<string>
     #defaultSettings: Array<string>
-    #latestSetting: number;
 
     #keybindings: Array<string>
     #defaultBinds: Array<string>
     #bindConstructor: Array<string>
-    #latestBinding: number;
     #pmlVersion: string;
 
     constructor(polyVersion: string, pmlVersion: string) {
@@ -511,12 +507,10 @@ export class PolyModLoader {
         this.#settings = [];
         this.#settingConstructor = [];
         this.#defaultSettings = [];
-        this.#latestSetting = 18;
 
         this.#keybindings = []
         this.#defaultBinds = []
         this.#bindConstructor = []
-        this.#latestBinding = 31
         this.editorExtras = new EditorExtras(this);
     }
     get polyVersion() {
@@ -893,8 +887,8 @@ export class PolyModLoader {
         this.#keybindings.push(`MR(this, iR, "m", AR).call(this, MR(this, aR, "f").get("${name}")),`);
     }
     registerSetting(name: string, id: string, type: SettingType, defaultOption: any, optionsOptional?: Array<{ title: string, value: string }>) {
-        this.#latestSetting++
-        this.#settingConstructor.push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${this.#latestSetting}] = "${id}";`);
+        let latestSetting = (Object.keys(this.getFromPolyTrack(Variables.SettingEnum)).length/2)+2
+        this.#settingConstructor.push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${latestSetting}] = "${id}";`);
         if (type === "boolean") {
             this.#defaultSettings.push(`, [${Variables.SettingEnum}.${id}, "${defaultOption ? "true" : "false"}"]`)
             this.#settings.push(`
@@ -929,10 +923,10 @@ export class PolyModLoader {
     settingClass: any;
     soundManager: SoundManager | undefined;
     registerKeybind(name: string, id: string, event: string, defaultBind: string, secondBindOptional: string | null, callback: Function) {
+        let latestBinding = (Object.keys(this.getFromPolyTrack(Variables.KeybindEnum)).length/2)+2
         this.#keybindings.push(`MR(this, iR, "m", ER).call(this, MR(this, aR, "f").get("${name}"), ${Variables.KeybindEnum}.${id}),`);
-        this.#bindConstructor.push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${this.#latestBinding}] = "${id}";`);
+        this.#bindConstructor.push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${latestBinding}] = "${id}";`);
         this.#defaultBinds.push(`, [${Variables.KeybindEnum}.${id}, ["${defaultBind}", ${secondBindOptional ? `"${secondBindOptional}"` : "null"}]]`);
-        this.#latestBinding++;
         window.addEventListener(event, (e) => {
             if (this.settingClass.checkKeyBinding(e, this.getFromPolyTrack(`${Variables.KeybindEnum}.${id}`))) {
                 callback(e)
