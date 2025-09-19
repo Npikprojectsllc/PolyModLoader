@@ -325,10 +325,11 @@ class PolyDB {
     #db: IDBDatabase | undefined;
     cacheMods = true;
     constructor(pml: PolyModLoader) {
-        let settingList = pml.localStorage?.getItem("polytrack_v4_prod_settings") as unknown as Array<Array<string>>;
-        console.log(settingList);
-        for(let setting in settingList){
-            if(setting[0] == "pmlCacheMods") {
+        let settingList = JSON.parse(pml.localStorage?.getItem("polytrack_v4_prod_settings") || "[]") as unknown as Array<Array<string>>;
+        
+        for(let setting of settingList){
+            if(setting[0] === "pmlCacheMods") {
+                console.log(setting[0], setting[1])
                 this.cacheMods = setting[1] == "true";
             }
         }
@@ -1200,6 +1201,6 @@ export class PolyModLoader {
     }
 }
 
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-8");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-9");
 
 export { ActivePolyModLoader }

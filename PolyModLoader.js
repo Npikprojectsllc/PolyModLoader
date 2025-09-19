@@ -313,10 +313,10 @@ class PolyDB {
         _PolyDB_db.set(this, void 0);
         this.cacheMods = true;
         this.dbUpgrading = false;
-        let settingList = pml.localStorage?.getItem("polytrack_v4_prod_settings");
-        console.log(settingList);
-        for (let setting in settingList) {
-            if (setting[0] == "pmlCacheMods") {
+        let settingList = JSON.parse(pml.localStorage?.getItem("polytrack_v4_prod_settings") || "[]");
+        for (let setting of settingList) {
+            if (setting[0] === "pmlCacheMods") {
+                console.log(setting[0], setting[1]);
                 this.cacheMods = setting[1] == "true";
             }
         }
@@ -1153,5 +1153,5 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
     this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`);
 };
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-8");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-9");
 export { ActivePolyModLoader };
