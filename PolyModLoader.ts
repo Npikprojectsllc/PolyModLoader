@@ -1201,6 +1201,6 @@ export class PolyModLoader {
     }
 }
 
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "27-9");
+const ActivePolyModLoader = new PolyModLoader("0.5.1", "28-1");
 
 export { ActivePolyModLoader }
