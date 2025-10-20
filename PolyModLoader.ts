@@ -332,6 +332,25 @@ class PolyDB {
                 console.log(setting[0], setting[1])
                 this.cacheMods = setting[1] == "true";
             }
+
+            if(setting[0] === "debugmode") {
+                if(setting[1] === "true") {
+                    console.log("Debug mode is ON");
+                    window.localStorage.setItem("debug", "true");
+                } else if(setting[1] === "false") {
+                    console.log("Debug mode is OFF");
+                    window.localStorage.setItem("debug", "false");
+                }
+            }
+
+            if(setting[0] === "clearmods") {
+                if(setting[1] === "true") {
+                    console.log("Clearing polyMods");
+                    window.localStorage.removeItem("polyMods");
+                    window.localStorage.removeItem("polytrack_v4_prod_settings");
+                    location.reload();
+                }
+            }
         }
     }
     dbUpgrading = false;
@@ -1000,9 +1019,12 @@ export class PolyModLoader {
             text.textContent = "polymodloader.com - " + e.get("Version") + " " + "${this.#pmlVersion}";
             TN(this, iN, "f").appendChild(text);
         `)
+        // register PML settings
         this.registerSettingCategory("PolyModLoader");
         this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
         this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`)
+        this.registerSetting("Debug Mode (Reload TWICE to apply)", "debugmode", SettingType.BOOL, false);
+        this.registerSetting("Clear polyMods", "clearmods", SettingType.BOOL, false);
     }
     initMods() {
         this.#preInitPML();
