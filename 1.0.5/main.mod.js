@@ -27,59 +27,80 @@ function isElectron() {
 
 async function checkForUpdate() {
   const pmlversion = window.pmlversion;
-  if (
-    typeof pmlversion === "undefined" ||
-    pmlversion === null ||
-    pmlversion === ""
-  ) {
+  if (!pmlversion) {
     console.error("pmlversion is missing or empty");
-    return true; // Assume update is needed if version is missing
+    return true; // assume update needed if missing
   }
 
-  // Extract the suffix from pmlversion
-  let currentVersion;
-  try {
-    const suffix = pmlversion.split("-").pop();
-    currentVersion = parseInt(suffix, 10);
-    if (isNaN(currentVersion)) {
-      console.error(
-        "Could not extract valid version from pmlversion:",
-        pmlversion
-      );
-      return true; // Assume update is needed if version is invalid
-    }
-  } catch (error) {
-    console.error("Error parsing pmlversion:", error);
+  // Parse current version: vW.X.Y-Z
+  const versionRegex = /^v(\d+)\.(\d+)\.(\d+)-(\d+)$/;
+  const match = pmlversion.match(versionRegex);
+  if (!match) {
+    console.error("Invalid pmlversion format:", pmlversion);
     return true;
   }
 
-  // Check for newer tag
+  const [_, w, x, y, build] = match.map(Number);
+  const currentGameVersion = [w, x, y];
+  const currentBuild = build;
+
+  console.log("Current game version:", currentGameVersion.join("."));
+  console.log("Current build:", currentBuild);
+
   try {
     const response = await fetch(
-      `https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags`
+      "https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags"
     );
     if (!response.ok) throw new Error("Failed to fetch tags");
-    const tags = await response.json();
-    // Get all version suffixes as numbers
-    const tagVersions = tags
-      .filter((tag) => tag.name.startsWith("v0.5.1-"))
-      .map((tag) => {
-        const suffix = tag.name.split("-")[1];
-        return parseInt(suffix, 10);
-      })
-      .filter((v) => !isNaN(v));
-    // Find the newest version
-    const newestVersion = Math.max(...tagVersions);
-    // Return true if currentVersion is less than newestVersion
-    console.log("currentVersion:", currentVersion);
-    console.log("newestVersion:", newestVersion);
 
-    return currentVersion < newestVersion;
+    const tags = await response.json();
+
+    // Parse all valid tags into comparable objects
+    const parsedTags = tags
+      .map((tag) => {
+        const m = tag.name.match(/^v(\d+)\.(\d+)\.(\d+)-(\d+)$/);
+        if (!m) return null;
+        const [_, W, X, Y, build] = m.map(Number);
+        return {
+          raw: tag.name,
+          gameVersion: [W, X, Y],
+          build,
+        };
+      })
+      .filter(Boolean);
+
+    if (parsedTags.length === 0) {
+      console.warn("No valid version tags found.");
+      return false;
+    }
+
+    // Sort tags: first by game version (semver), then by build number
+    parsedTags.sort((a, b) => {
+      for (let i = 0; i < 3; i++) {
+        if (a.gameVersion[i] !== b.gameVersion[i])
+          return a.gameVersion[i] - b.gameVersion[i];
+      }
+      return a.build - b.build;
+    });
+
+    const newest = parsedTags[parsedTags.length - 1];
+
+    console.log("Newest available version:", newest.raw);
+
+    // Compare current vs newest
+    for (let i = 0; i < 3; i++) {
+      if (currentGameVersion[i] < newest.gameVersion[i]) return true; // newer game version
+      if (currentGameVersion[i] > newest.gameVersion[i]) return false; // we're ahead (dev)
+    }
+
+    // same game version → compare build number
+    return currentBuild < newest.build;
   } catch (error) {
-    console.error("Error checking for newer tag in Electron:", error);
+    console.error("Error checking for updates:", error);
     return false;
   }
 }
+
 
 class PMLCoreMod extends PolyMod {
   openDescription = function (n, mod) {
