@@ -8,6 +8,13 @@
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
+
+const pmlversion = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags")
+  .then(r => r.json())
+  .then(tags => tags[0]?.name ?? "untagged");
+// @ts-ignore
+window.pmlversion = pmlversion;
+
 export class PolyMod {
     /**
      * The author of the mod.
@@ -1222,7 +1229,7 @@ export class PolyModLoader {
         })
     }
 }
-
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "28-1");
+// @ts-ignore
+const ActivePolyModLoader = new PolyModLoader("0.5.1", window.pmlversion);
 
 export { ActivePolyModLoader }

@@ -19,6 +19,11 @@ var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_categoryD
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
+const pmlversion = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags")
+    .then(r => r.json())
+    .then(tags => tags[0]?.name ?? "untagged");
+// @ts-ignore
+window.pmlversion = pmlversion;
 export class PolyMod {
     constructor() {
         this.loaded = false;
@@ -1174,5 +1179,6 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerSetting("Debug Mode (Reload TWICE to apply)", "debugmode", SettingType.BOOL, false);
     this.registerSetting("Clear polyMods", "clearmods", SettingType.BOOL, false);
 };
-const ActivePolyModLoader = new PolyModLoader("0.5.1", "28-1");
+// @ts-ignore
+const ActivePolyModLoader = new PolyModLoader("0.5.1", window.pmlversion);
 export { ActivePolyModLoader };

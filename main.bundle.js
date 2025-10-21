@@ -5,6 +5,7 @@ import {
   EditorExtras,
 } from "./PolyModLoader.js";
 ActivePolyModLoader.initStorage(localStorage);
+console.log(window.pmlversion);
 window.polyModLoader = ActivePolyModLoader;
 ActivePolyModLoader.importMods().then(() => {
   var e,
