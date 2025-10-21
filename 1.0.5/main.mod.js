@@ -49,7 +49,7 @@ async function checkForUpdate() {
 
   try {
     const response = await fetch(
-      "https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags"
+      "https://codeberg.org/api/v1/repos/CRJakob/PolyModLoader/tags"
     );
     if (!response.ok) throw new Error("Failed to fetch tags");
 
