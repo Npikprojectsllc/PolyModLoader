@@ -1,19 +1,16 @@
+const pmlversion = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags").then(r => r.json()).then(tags => tags[0]?.name ?? "untagged");
+// @ts-ignore
+window.pmlversion = pmlversion;
 /**
  * 
  *      To compile:
- *          tsc PolyModLoader.ts --target ES2020 --module ES2020
+ *          tsc PolyModLoader.ts --target ES2020 --module ES2022
  * 
  */
 
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
-
-const pmlversion = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags")
-  .then(r => r.json())
-  .then(tags => tags[0]?.name ?? "untagged");
-// @ts-ignore
-window.pmlversion = pmlversion;
 
 export class PolyMod {
     /**
