@@ -773,7 +773,7 @@ export class PolyModLoader {
         else {
             __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, [
                 {
-                    "base": "https://pml.crjakob.com/polytrackmods/PolyModLoader/pmlcore",
+                    "base": "https://pml.crjakob.com/CRJakob/PolyModLoader/pmlcore",
                     "version": "latest",
                     "loaded": true
                 }

@@ -809,7 +809,7 @@ export class PolyModLoader {
         } else {
             this.#polyModUrls = [
                 {
-                    "base": "https://pml.crjakob.com/polytrackmods/PolyModLoader/pmlcore",
+                    "base": "https://pml.crjakob.com/CRJakob/PolyModLoader/pmlcore",
                     "version": "latest",
                     "loaded": true
                 }
