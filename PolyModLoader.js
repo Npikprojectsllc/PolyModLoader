@@ -96,7 +96,7 @@ export async function checkForUpdate() {
     console.log("Current game version:", currentGameVersion.join("."));
     console.log("Current build:", currentBuild);
     try {
-        const response = await fetch("https://codeberg.org/api/v1/repos/CRJakob/PolyModLoader/tags");
+        const response = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags");
         if (!response.ok)
             throw new Error("Failed to fetch tags");
         const tags = await response.json();
@@ -692,7 +692,7 @@ export class PolyModLoader {
         loadingDiv.style.backgroundColor = "#192042";
         loadingDiv.style.transition = "background-color 1s ease-out";
         loadingDiv.style.overflow = "hidden";
-        loadingDiv.innerHTML = `<img src="https://pml.crjakob.com/polytrackmods/PolyModLoader/0.5.0/images/pmllogo.svg" style="width: calc(100vw * (1000 / 1300)); height: 200px; margin: 30px auto 0 auto" />`;
+        loadingDiv.innerHTML = `<img src="https://cdn.polymodloader.com/polytrackmods/PolyModLoader/0.5.0/images/pmllogo.svg" style="width: calc(100vw * (1000 / 1300)); height: 200px; margin: 30px auto 0 auto" />`;
         const loadingUI = document.createElement("div");
         loadingUI.style.margin = "20px 0 0 0";
         loadingUI.style.padding = "0";
@@ -916,7 +916,7 @@ export class PolyModLoader {
         else {
             __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, [
                 {
-                    "base": "https://pml.crjakob.com/CRJakob/PolyModLoader/pmlcore",
+                    "base": "https://cdn.polymodloader.com/polytrackmods/PolyModLoader/pmlcore",
                     "version": "latest",
                     "loaded": true
                 }
