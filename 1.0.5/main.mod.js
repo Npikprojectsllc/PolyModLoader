@@ -4,7 +4,7 @@ import {
 } from "https://cdn.polymodloader.com/cb/polytrackmods/PolyModLoader/0.5.1/PolyModLoader.js";
 // import { isElectron } from "https://cdn.polymodloader.com/cb/CRJakob/jakobspolymods/main/modpackTools.js";
 
-// function to detect if running on app version
+// function to detect if running on Electron app version
 function isElectron() {
     // Renderer process
     if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
@@ -24,6 +24,26 @@ function isElectron() {
     return false;
 }
 
+function isAndroidApp() {
+  // Cordova defines a global object
+  if (typeof window.cordova !== "undefined") {
+    // Extra sanity check for platform
+    if (window.device && window.device.platform === "Android") return true;
+    // Fallback for early stage before deviceready
+    if (/android/i.test(navigator.userAgent)) return true;
+  }
+
+  // Fallback: URL pattern (Android app assets)
+  if (document.URL.startsWith("file:///android_asset/")) return true;
+
+  return false;
+}
+
+function isApp() {
+  if( isElectron() || isAndroidApp() ) return true;
+
+  return false;
+}
 
 async function checkForUpdate() {
   const pmlversion = window.pmlversion;
@@ -1015,7 +1035,9 @@ class PMLCoreMod extends PolyMod {
     );
   };
   postInit = () => {
-    if (isElectron()) {
+    if ( isElectron() ) console.log("Running electron app!")
+    if ( isAndroidApp() ) console.log("Running Android app! ")
+    if (isApp()) {
       checkForUpdate().then((needsUpdate) => {
         console.log(needsUpdate);
         if (needsUpdate) {
