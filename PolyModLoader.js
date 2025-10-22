@@ -21,7 +21,121 @@ var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_categoryD
  */
 const pmlversion = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags").then(r => r.json()).then(tags => tags[0]?.name ?? "untagged");
 // @ts-ignore
-window.pmlversion = pmlversion;
+Object.defineProperty(window, "pmlversion", {
+    get() {
+        return pmlversion;
+    },
+    set(value) {
+        console.warn("Attempted to overwrite window.pmlversion with", value, "- ignored.");
+    },
+    configurable: true,
+    enumerable: true
+});
+// Detect Electron runtime
+function isElectron() {
+    // Renderer process (BrowserWindow)
+    if (typeof window !== "undefined") {
+        const win = window;
+        if (typeof win.process === "object" && win.process?.type === "renderer") {
+            return true;
+        }
+    }
+    // Main process or preload
+    const g = globalThis;
+    if (g?.process?.versions?.electron) {
+        return true;
+    }
+    // User agent check (nodeIntegration disabled or sandboxed renderer)
+    if (typeof navigator === "object" && /electron/i.test(navigator.userAgent)) {
+        return true;
+    }
+    return false;
+}
+// Detect Cordova Android app
+function isAndroidApp() {
+    const win = window;
+    // 1️⃣ Cordova presence
+    if (typeof win.cordova !== "undefined") {
+        // Cordova Device plugin check (safe optional chain)
+        const platform = win.device?.platform?.toLowerCase?.();
+        if (platform === "android")
+            return true;
+        // Fallback: user agent heuristic
+        if (/android/i.test(navigator.userAgent))
+            return true;
+    }
+    // 2️⃣ Fallback: Cordova/Capacitor WebView URL pattern
+    const url = document.URL || "";
+    if (url.startsWith("file:///android_asset/"))
+        return true;
+    // 3️⃣ Future-proof: Capacitor-based apps (optional)
+    if ((win.Capacitor?.getPlatform?.() || "").toLowerCase() === "android")
+        return true;
+    return false;
+}
+// General app detection
+export function isApp() {
+    return isElectron() || isAndroidApp();
+}
+// Full update checker
+export async function checkForUpdate() {
+    const pmlversion = window.pmlversion;
+    if (!pmlversion) {
+        console.error("pmlversion is missing or empty");
+        return true;
+    }
+    const versionRegex = /^v(\d+)\.(\d+)\.(\d+)-(\d+)$/;
+    const match = pmlversion.match(versionRegex);
+    if (!match) {
+        console.error("Invalid pmlversion format:", pmlversion);
+        return true;
+    }
+    const [, w, x, y, build] = match.map(Number);
+    const currentGameVersion = [w, x, y];
+    const currentBuild = build;
+    console.log("Current game version:", currentGameVersion.join("."));
+    console.log("Current build:", currentBuild);
+    try {
+        const response = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags");
+        if (!response.ok)
+            throw new Error("Failed to fetch tags");
+        const tags = await response.json();
+        const parsedTags = tags
+            .map((tag) => {
+            const m = tag.name.match(/^v(\d+)\.(\d+)\.(\d+)-(\d+)$/);
+            if (!m)
+                return null;
+            const [, W, X, Y, build] = m.map(Number);
+            return { raw: tag.name, gameVersion: [W, X, Y], build };
+        })
+            .filter(Boolean);
+        if (parsedTags.length === 0) {
+            console.warn("No valid version tags found.");
+            return false;
+        }
+        // @ts-ignore
+        parsedTags.sort((a, b) => {
+            for (let i = 0; i < 3; i++) {
+                if (a.gameVersion[i] !== b.gameVersion[i])
+                    return a.gameVersion[i] - b.gameVersion[i];
+            }
+            return a.build - b.build;
+        });
+        const newest = parsedTags[parsedTags.length - 1];
+        console.log("Newest available version:", newest.raw);
+        for (let i = 0; i < 3; i++) {
+            if (currentGameVersion[i] < newest.gameVersion[i])
+                return true;
+            if (currentGameVersion[i] > newest.gameVersion[i])
+                return false;
+        }
+        return currentBuild < newest.build;
+    }
+    catch (error) {
+        console.error("Error checking for updates:", error);
+        return false;
+    }
+}
 export class PolyMod {
     constructor() {
         this.loaded = false;
@@ -497,6 +611,35 @@ export class PolyModLoader {
         __classPrivateFieldSet(this, _PolyModLoader_allMods, [], "f");
         /** @type {boolean} */
         __classPrivateFieldSet(this, _PolyModLoader_physicsTouched, false, "f");
+        console.log("[PML] PolyModLoader initialized, version:", pmlVersion);
+        // 🔹 Run environment detection + update check
+        setTimeout(() => {
+            console.log("[PML] Running environment detection...");
+            const electron = isElectron();
+            const android = isAndroidApp();
+            const app = isApp();
+            if (electron)
+                console.log("Running Electron app!");
+            if (android)
+                console.log("Running Android app!");
+            if (!app)
+                console.log("Running in web browser.");
+            if (app) {
+                console.log("[PML] App environment detected — checking for updates...");
+                checkForUpdate()
+                    .then((needsUpdate) => {
+                    console.log("[PML] Update check complete:", needsUpdate);
+                    if (needsUpdate) {
+                        alert("You are playing on an outdated version of PolyModLoader.\n" +
+                            "Please update your game by downloading the latest version from:\n" +
+                            "https://codeberg.org/polytrackmods/PolyModLoader/releases");
+                    }
+                })
+                    .catch((err) => {
+                    console.error("[PML] Update check failed:", err);
+                });
+            }
+        }, 0);
         /**
          * @type {{
          *      scope: string,
@@ -549,7 +692,7 @@ export class PolyModLoader {
         loadingDiv.style.backgroundColor = "#192042";
         loadingDiv.style.transition = "background-color 1s ease-out";
         loadingDiv.style.overflow = "hidden";
-        loadingDiv.innerHTML = `<img src="https://pml.crjakob.com/polytrackmods/PolyModLoader/0.5.0/images/pmllogo.svg" style="width: calc(100vw * (1000 / 1300)); height: 200px; margin: 30px auto 0 auto" />`;
+        loadingDiv.innerHTML = `<img src="https://cdn.polymodloader.com/polytrackmods/PolyModLoader/0.5.0/images/pmllogo.svg" style="width: calc(100vw * (1000 / 1300)); height: 200px; margin: 30px auto 0 auto" />`;
         const loadingUI = document.createElement("div");
         loadingUI.style.margin = "20px 0 0 0";
         loadingUI.style.padding = "0";
@@ -773,7 +916,7 @@ export class PolyModLoader {
         else {
             __classPrivateFieldSet(this, _PolyModLoader_polyModUrls, [
                 {
-                    "base": "https://pml.crjakob.com/polytrackmods/PolyModLoader/pmlcore",
+                    "base": "https://cdn.polymodloader.com/polytrackmods/PolyModLoader/pmlcore",
                     "version": "latest",
                     "loaded": true
                 }

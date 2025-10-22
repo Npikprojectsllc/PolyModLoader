@@ -11,7 +11,138 @@
 
 const pmlversion = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags").then(r => r.json()).then(tags => tags[0]?.name ?? "untagged");
 // @ts-ignore
-window.pmlversion = pmlversion;
+Object.defineProperty(window, "pmlversion", {
+    get() {
+        return pmlversion;
+    },
+    set(value) {
+        console.warn("Attempted to overwrite window.pmlversion with", value, "- ignored.");
+    },
+    configurable: true,
+    enumerable: true
+});
+
+// Detect Electron runtime
+function isElectron(): boolean {
+    // Renderer process (BrowserWindow)
+    if (typeof window !== "undefined") {
+        const win = window as any;
+        if (typeof win.process === "object" && win.process?.type === "renderer") {
+            return true;
+        }
+    }
+
+    // Main process or preload
+    const g = globalThis as any;
+    if (g?.process?.versions?.electron) {
+        return true;
+    }
+
+    // User agent check (nodeIntegration disabled or sandboxed renderer)
+    if (typeof navigator === "object" && /electron/i.test(navigator.userAgent)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+// Detect Cordova Android app
+function isAndroidApp(): boolean {
+    const win = window as any;
+
+    // 1️⃣ Cordova presence
+    if (typeof win.cordova !== "undefined") {
+        // Cordova Device plugin check (safe optional chain)
+        const platform = win.device?.platform?.toLowerCase?.();
+        if (platform === "android") return true;
+
+        // Fallback: user agent heuristic
+        if (/android/i.test(navigator.userAgent)) return true;
+    }
+
+    // 2️⃣ Fallback: Cordova/Capacitor WebView URL pattern
+    const url = document.URL || "";
+    if (url.startsWith("file:///android_asset/")) return true;
+
+    // 3️⃣ Future-proof: Capacitor-based apps (optional)
+    if ((win.Capacitor?.getPlatform?.() || "").toLowerCase() === "android") return true;
+
+    return false;
+}
+
+
+// General app detection
+export function isApp(): boolean {
+    return isElectron() || isAndroidApp();
+}
+
+// Full update checker
+export async function checkForUpdate(): Promise<boolean> {
+    const pmlversion = (window as any).pmlversion;
+    if (!pmlversion) {
+        console.error("pmlversion is missing or empty");
+        return true;
+    }
+
+    const versionRegex = /^v(\d+)\.(\d+)\.(\d+)-(\d+)$/;
+    const match = pmlversion.match(versionRegex);
+    if (!match) {
+        console.error("Invalid pmlversion format:", pmlversion);
+        return true;
+    }
+
+    const [, w, x, y, build] = match.map(Number);
+    const currentGameVersion = [w, x, y];
+    const currentBuild = build;
+
+    console.log("Current game version:", currentGameVersion.join("."));
+    console.log("Current build:", currentBuild);
+
+    try {
+        const response = await fetch("https://codeberg.org/api/v1/repos/polytrackmods/PolyModLoader/tags");
+        if (!response.ok) throw new Error("Failed to fetch tags");
+
+        const tags = await response.json();
+
+        const parsedTags = tags
+            .map((tag: any) => {
+                const m = tag.name.match(/^v(\d+)\.(\d+)\.(\d+)-(\d+)$/);
+                if (!m) return null;
+                const [, W, X, Y, build] = m.map(Number);
+                return { raw: tag.name, gameVersion: [W, X, Y], build };
+            })
+            .filter(Boolean);
+
+        if (parsedTags.length === 0) {
+            console.warn("No valid version tags found.");
+            return false;
+        }
+
+        // @ts-ignore
+        parsedTags.sort((a, b) => {
+            for (let i = 0; i < 3; i++) {
+                if (a.gameVersion[i] !== b.gameVersion[i])
+                    return a.gameVersion[i] - b.gameVersion[i];
+            }
+            return a.build - b.build;
+        });
+
+        const newest = parsedTags[parsedTags.length - 1];
+        console.log("Newest available version:", newest.raw);
+
+        for (let i = 0; i < 3; i++) {
+            if (currentGameVersion[i] < newest.gameVersion[i]) return true;
+            if (currentGameVersion[i] > newest.gameVersion[i]) return false;
+        }
+
+        return currentBuild < newest.build;
+    } catch (error) {
+        console.error("Error checking for updates:", error);
+        return false;
+    }
+}
+
 
 export class PolyMod {
     /**
@@ -162,9 +293,9 @@ export class PolyMod {
      * Function to run before initialization of `simulation_worker.bundle.js`.
      */
     simInit = () => { }
-     /**
-     * Function to run once game finishses loading
-     */
+    /**
+    * Function to run once game finishses loading
+    */
     onGameLoad = () => { }
     /**
      * Whether the mod
@@ -297,14 +428,14 @@ export class EditorExtras {
     }
 
     registerCategory(id: string, defaultId: string) {
-        let latestCategory = (Object.keys(this.pml.getFromPolyTrack("RA")).length/2)+2
+        let latestCategory = (Object.keys(this.pml.getFromPolyTrack("RA")).length / 2) + 2
         this.pml.getFromPolyTrack(`RA[RA.${id} = ${latestCategory}]  =  "${id}"`);
         this.#simBlocks.push(`fv[fv.${id} = ${latestCategory}]  =  "${id}"`);
         this.#categoryDefaults.push(`case RA.${id}:n = this.getPart(Sb.${defaultId});break;`)
     }
 
     registerBlock(id: string, categoryId: string, checksum: string, sceneName: string, modelName: string, overlapSpace: Array<Array<Array<number>>>, extraSettings?: { ignoreOnExport?: boolean, specialSettings?: { type: string, center: Array<number>, size: Array<number> } }) {
-        let latestBlock = (Object.keys(this.pml.getFromPolyTrack("Sb")).length/2)+2
+        let latestBlock = (Object.keys(this.pml.getFromPolyTrack("Sb")).length / 2) + 2
         this.pml.getFromPolyTrack(`Sb[Sb.${id} = ${latestBlock}]  =  "${id}"`);
         this.pml.getFromPolyTrack(`VA.push(new HA("${checksum}",RA.${categoryId},Sb.${id},[["${sceneName}", "${modelName}"]],FA,${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: DA.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
         this.pml.getFromPolyTrack(`GA.clear();for (const e of VA) {if (!GA.has(e.id)){ GA.set(e.id, e);}; }`);
@@ -320,36 +451,36 @@ export class EditorExtras {
         this.pml.registerClassMixin("eU.prototype",
             "init", MixinType.REPLACEBETWEEN,
             `((a = [`,
-            ` ]),`,`((a = ["${this.#modelUrls.join('", "')}"]),`);
+            ` ]),`, `((a = ["${this.#modelUrls.join('", "')}"]),`);
         this.pml.registerFuncMixin("sx", MixinType.INSERT, `for (const [r, a] of lx(this, rx, "f")) {`, `if (ActivePolyModLoader.editorExtras.ignoredBlocks.includes(r)) {continue;};`);
         this.pml.registerClassMixin("eU.prototype", "getCategoryMesh", MixinType.INSERT, "n = this.getPart(Sb.SignArrowLeft);", `break;${this.#categoryDefaults.join("")}`);
     }
 }
 
-class PolyDB { 
+class PolyDB {
     #db: IDBDatabase | undefined;
     cacheMods = true;
     constructor(pml: PolyModLoader) {
         let settingList = JSON.parse(pml.localStorage?.getItem("polytrack_v4_prod_settings") || "[]") as unknown as Array<Array<string>>;
-        
-        for(let setting of settingList){
-            if(setting[0] === "pmlCacheMods") {
+
+        for (let setting of settingList) {
+            if (setting[0] === "pmlCacheMods") {
                 console.log(setting[0], setting[1])
                 this.cacheMods = setting[1] == "true";
             }
 
-            if(setting[0] === "debugmode") {
-                if(setting[1] === "true") {
+            if (setting[0] === "debugmode") {
+                if (setting[1] === "true") {
                     console.log("Debug mode is ON");
                     window.localStorage.setItem("debug", "true");
-                } else if(setting[1] === "false") {
+                } else if (setting[1] === "false") {
                     console.log("Debug mode is OFF");
                     window.localStorage.setItem("debug", "false");
                 }
             }
 
-            if(setting[0] === "clearmods") {
-                if(setting[1] === "true") {
+            if (setting[0] === "clearmods") {
+                if (setting[1] === "true") {
                     console.log("Clearing polyMods");
                     window.localStorage.removeItem("polyMods");
                     window.localStorage.removeItem("polytrack_v4_prod_settings");
@@ -366,14 +497,14 @@ class PolyDB {
                 const transaction = localDb.transaction("mods", "readwrite");
                 const store = transaction?.objectStore("mods");
                 const request = store?.clear();
-                if(!request) { return reject(null); };
-                request.onsuccess = () => resolve(request?.result || null );
+                if (!request) { return reject(null); };
+                request.onsuccess = () => resolve(request?.result || null);
                 request.onerror = () => reject(request?.result || null);
-            } catch (err){ 
+            } catch (err) {
                 reject(err);
             }
         });
-        for(let index = 0; index < modList.length; index++) {
+        for (let index = 0; index < modList.length; index++) {
             const modSerialized = modList[index];
             const mod = pmlModList[index];
             try {
@@ -427,7 +558,7 @@ class PolyDB {
             };
         });
     }
-    async getMod(baseUrl: string) : Promise<{ baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }>}, codeStr: Blob } | null> {
+    async getMod(baseUrl: string): Promise<{ baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }> }, codeStr: Blob } | null> {
         let localDb = await this.#getDb();
         return await new Promise((resolve, reject) => {
             if (!localDb) {
@@ -437,12 +568,12 @@ class PolyDB {
             const transaction = localDb.transaction("mods", "readonly");
             const store = transaction?.objectStore("mods");
             const request = store?.get(baseUrl);
-            if(!request) { return null; };
-            request.onsuccess = () => resolve(request?.result || null );
+            if (!request) { return null; };
+            request.onsuccess = () => resolve(request?.result || null);
             request.onerror = () => reject(null);
         })
     }
-    async saveMod(baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }> } | undefined){
+    async saveMod(baseUrl: string, version: string, manifest: { polymod: { name: string, author: string, version: string, id: string, targets: Array<string>, main: string }, dependencies: Array<{ id: string, version: string }> } | undefined) {
         const localDb = await this.#getDb();
         if (!localDb) {
             console.error("Database not initialized.");
@@ -511,6 +642,40 @@ export class PolyModLoader {
         this.#allMods = [];
         /** @type {boolean} */
         this.#physicsTouched = false;
+
+        console.log("[PML] PolyModLoader initialized, version:", pmlVersion);
+
+        // 🔹 Run environment detection + update check
+        setTimeout(() => {
+            console.log("[PML] Running environment detection...");
+
+            const electron = isElectron();
+            const android = isAndroidApp();
+            const app = isApp();
+
+            if (electron) console.log("Running Electron app!");
+            if (android) console.log("Running Android app!");
+            if (!app) console.log("Running in web browser.");
+
+            if (app) {
+                console.log("[PML] App environment detected — checking for updates...");
+                checkForUpdate()
+                    .then((needsUpdate) => {
+                        console.log("[PML] Update check complete:", needsUpdate);
+                        if (needsUpdate) {
+                            alert(
+                                "You are playing on an outdated version of PolyModLoader.\n" +
+                                "Please update your game by downloading the latest version from:\n" +
+                                "https://codeberg.org/polytrackmods/PolyModLoader/releases"
+                            );
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("[PML] Update check failed:", err);
+                    });
+            }
+        }, 0);
+
         /** 
          * @type {{
          *      scope: string,
@@ -568,7 +733,7 @@ export class PolyModLoader {
         loadingDiv.style.transition = "background-color 1s ease-out";
         loadingDiv.style.overflow = "hidden";
 
-        loadingDiv.innerHTML = `<img src="https://pml.crjakob.com/polytrackmods/PolyModLoader/0.5.0/images/pmllogo.svg" style="width: calc(100vw * (1000 / 1300)); height: 200px; margin: 30px auto 0 auto" />`;
+        loadingDiv.innerHTML = `<img src="https://cdn.polymodloader.com/polytrackmods/PolyModLoader/0.5.0/images/pmllogo.svg" style="width: calc(100vw * (1000 / 1300)); height: 200px; margin: 30px auto 0 auto" />`;
 
         const loadingUI = document.createElement("div");
         loadingUI.style.margin = "20px 0 0 0";
@@ -627,7 +792,7 @@ export class PolyModLoader {
         loadingDiv.appendChild(loadingUI);
         ui.appendChild(loadingDiv);
 
-        const total:number = this.#polyModUrls ? this.#polyModUrls.length : 0;
+        const total: number = this.#polyModUrls ? this.#polyModUrls.length : 0;
         const current = {
             num: 0,
             text: undefined,
@@ -749,7 +914,7 @@ export class PolyModLoader {
                 }
                 finishFetchLatest(polyModObject.version);
             }
-            if(this.polyDb.cacheMods && dbMod && polyModObject.version === dbMod.version) {
+            if (this.polyDb.cacheMods && dbMod && polyModObject.version === dbMod.version) {
                 console.log("Mod version in DB, skipping import")
                 importFromDB = true;
             }
@@ -757,7 +922,7 @@ export class PolyModLoader {
             startFetchManifest();
             try {
                 let manifestFile;
-                if(importFromDB && dbMod) {
+                if (importFromDB && dbMod) {
                     manifestFile = dbMod.manifest
                 } else {
                     manifestFile = await fetch(`${polyModUrl}/manifest.json`).then(r => r.json());
@@ -767,7 +932,7 @@ export class PolyModLoader {
                 try {
                     const modImport = await import(importFromDB && dbMod ? URL.createObjectURL(new Blob([dbMod.codeStr], { type: "application/javascript" })) : `${polyModUrl}/${mod.main}`);
 
-                    let newMod:PolyMod = modImport.polyMod;
+                    let newMod: PolyMod = modImport.polyMod;
                     mod.version = polyModObject.version;
                     if (this.getMod(mod.id)) alert(`Duplicate mod detected: ${mod.name}`);
                     newMod.manifest = manifestFile;
@@ -809,7 +974,7 @@ export class PolyModLoader {
         } else {
             this.#polyModUrls = [
                 {
-                    "base": "https://pml.crjakob.com/polytrackmods/PolyModLoader/pmlcore",
+                    "base": "https://cdn.polymodloader.com/polytrackmods/PolyModLoader/pmlcore",
                     "version": "latest",
                     "loaded": true
                 }
@@ -894,7 +1059,7 @@ export class PolyModLoader {
                 newMod.applyManifest(manifestFile);
                 newMod.manifest = manifestFile;
                 newMod.baseUrl = polyModObject.base;
-                newMod.applyManifest = (nothing:any) => { console.warn("Can't apply manifest after initialization!") }
+                newMod.applyManifest = (nothing: any) => { console.warn("Can't apply manifest after initialization!") }
                 newMod.savedLatest = latest;
                 this.#allMods.push(newMod);
                 this.saveModsToLocalStorage();
@@ -965,14 +1130,14 @@ export class PolyModLoader {
     #applySettings() {
         this.registerClassMixin(`${Variables.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `ActivePolyModLoader.soundManager = new SoundManager(this);`)
         this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `() {`, `ActivePolyModLoader.settingClass = this;${this.#settingConstructor.join("")}`)
-        this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT,`[${Variables.SettingEnum}.CheckpointVolume, "1"]`, this.#defaultSettings.join(""))
+        this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `[${Variables.SettingEnum}.CheckpointVolume, "1"]`, this.#defaultSettings.join(""))
         this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, `MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("Controls")),`, `MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("Controls")),`, `${this.#settings.join("")}MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("Controls")),`)
     }
 
     #applyKeybinds() {
         this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultKeyBindings", MixinType.INSERT, `() {`, `${this.#bindConstructor.join("")};`)
         this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultKeyBindings", MixinType.INSERT, `[${Variables.KeybindEnum}.SpectatorSpeedModifier, ["ShiftLeft", "ShiftRight"]]`, this.#defaultBinds.join(""))
-        this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, ` );`,  ` );`, `),${this.#keybindings.join("")}null;`);
+        this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, ` );`, ` );`, `),${this.#keybindings.join("")}null;`);
         this.registerClassMixin(`${Variables.EditorClass}.prototype`, "update", MixinType.INSERT, `y_(this, DM, b_(this, bS, "m", f_).call(this), "f"),`, `ActivePolyModLoader.editorExtras.construct(this),`);
     }
     getSetting(id: string) {
@@ -1108,9 +1273,9 @@ export class PolyModLoader {
             }
         }
     }
-    gameLoadCalled:boolean = false;
+    gameLoadCalled: boolean = false;
     gameLoad() {
-        if(!this.gameLoadCalled) {
+        if (!this.gameLoadCalled) {
             this.gameLoadCalled = true;
         } else {
             return;
@@ -1197,7 +1362,7 @@ export class PolyModLoader {
      * @param {function} func       - The new function to be injected.
      */
     registerSimWorkerClassMixin(scope: string, path: string, mixinType: MixinType, accessors: string | Array<string>, func: Function | string, extraOptinonal?: Function | string) {
-        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e:any, t:any, n:any, i:any, r:any, a:any) => { })
+        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e: any, t: any, n: any, i: any, r: any, a: any) => { })
         this.#simWorkerClassMixins.push({
             scope: scope,
             path: path,
@@ -1217,7 +1382,7 @@ export class PolyModLoader {
      * @param {function} func       - The new function to be injected.
      */
     registerSimWorkerFuncMixin(path: string, mixinType: MixinType, accessors: string | Array<string>, func: Function | string, extraOptinonal?: Function | string) {
-        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e:any, t:any, n:any, i:any, r:any, a:any) => { })
+        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e: any, t: any, n: any, i: any, r: any, a: any) => { })
         this.#simWorkerFuncMixins.push({
             path: path,
             mixinType: mixinType,
