@@ -1035,9 +1035,9 @@ class PMLCoreMod extends PolyMod {
     );
   };
   postInit = () => {
-    if ( isElectron() ) console.log("Running electron app!")
-    if ( isAndroidApp() ) console.log("Running Android app! ")
-    if (isApp()) {
+    if ( isElectron() ) console.log("Running electron app!");
+    if ( isAndroidApp() ) console.log("Running Android app! ");
+    if ( isApp() ) {
       checkForUpdate().then((needsUpdate) => {
         console.log(needsUpdate);
         if (needsUpdate) {
