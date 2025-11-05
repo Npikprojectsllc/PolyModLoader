@@ -1,8 +1,8 @@
 {
   "productName": "PolyTrack",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "beta": {
-    "version": 2,
+    "version": 1,
     "physicsVersion": 4
   },
   "private": true,
