@@ -298,8 +298,172 @@
             if ('object' == typeof window)
                 return window;
         }
-    }(), (() => {
+    }();
+    let waitForMixins = new Promise((resolve) => {
+        const handler = (e) => {
+            resolve(e);
+            self.removeEventListener("message", handler);
+        };
+
+        self.addEventListener("message", handler);
+    });
+    
+    waitForMixins.then((mixinData) => {
         'use strict';
+        const MixinType = Object.freeze({
+            /**
+             * Insert code after a given token.
+             */
+            INSERT: 3,
+            /**
+             * Replace code between 2 given tokens. Inclusive.
+             */
+            REPLACEBETWEEN: 5,
+            /**
+             * Remove code between 2 given tokens. Inclusive.
+             */
+            REMOVEBETWEEN: 6
+        })
+        console.log(mixinData);
+        let registerClassMixin = (scope, path, mixinType, accessors, func, func1) => {
+                let originalFunc = eval(scope)[path];
+                let newFunc;
+                switch(mixinType) {
+                  case MixinType.INSERT:
+                    const funcStr = originalFunc.toString();
+        
+                    const tokenIndex = funcStr.indexOf(accessors);
+                    if (tokenIndex === -1) {
+                        throw new Error(`Token "${accessors}" not found in function "${path}".`);
+                    }
+        
+                    let injectedCode = func
+                        .replace(/^.*?{([\s\S]*)}$/, '$1')
+                        .trim();
+        
+                    let newFuncStr =
+                        funcStr.slice(0, tokenIndex + accessors.length) +
+                        injectedCode +
+                        funcStr.slice(tokenIndex + accessors.length);
+        
+                        const match1 = newFuncStr.match(/^[\w$]+\s*\(([^)]*)\)\s*{([\s\S]*)}$/);
+
+                        const args1 = match1[1].trim();
+                        const body1 = match1[2].trim();
+                        newFunc = eval(`(function(${args1}) {${body1}})`);
+                    break;
+                  case MixinType.REMOVEBETWEEN:
+                    const funcStr2 = originalFunc.toString();
+                    console.log(funcStr2);
+                    const firstTokenIndex = funcStr2.indexOf(accessors);
+                    const secondTokenIndex = funcStr2.indexOf(func);
+                    if (firstTokenIndex === -1) {
+                        throw new Error(`Token "${accessors}" not found in function "${path}".`);
+                    }
+                    if (secondTokenIndex === -1) {
+                        throw new Error(`Token "${func}" not found in function "${path}".`);
+                    }
+        
+                    let newFuncStr2 = funcStr2.split(funcStr2.substring(firstTokenIndex, secondTokenIndex + func.length)).join("");
+                    const match2 = newFuncStr2.match(/^[\w$]+\s*\(([^)]*)\)\s*{([\s\S]*)}$/);
+
+                    const args2 = match2[1].trim();
+                    const body2 = match2[2].trim();
+                    newFunc = eval(`(function(${args2}) {${body2}})`);
+                    break;
+                  case MixinType.REPLACEBETWEEN:
+                    const funcStr3 = originalFunc.toString();
+    
+                    const firstTokenIndex1 = funcStr3.indexOf(accessors);
+                    const secondTokenIndex1 = funcStr3.indexOf(func);
+                    if (firstTokenIndex1 === -1) {
+                        throw new Error(`Token "${accessors}" not found in function "${path}".`);
+                    }
+                    if (secondTokenIndex1 === -1) {
+                        throw new Error(`Token "${func}" not found in function "${path}".`);
+                    }
+                    let injectedCode2 = null;
+                    injectedCode2 = func1
+                    console.log(typeof func1);
+                    injectedCode2 = injectedCode2
+                    .replace(/^.*?{([\s\S]*)}$/, '$1')
+                    .trim();
+        
+                    let newFuncStr3 = funcStr3.split(funcStr3.substring(firstTokenIndex1, secondTokenIndex1 + func.length)).join(injectedCode2);
+                    
+                    const match = newFuncStr3.match(/^[\w$]+\s*\(([^)]*)\)\s*{([\s\S]*)}$/);
+
+                    const args = match[1].trim();
+                    const body = match[2].trim();
+                    newFunc = eval(`(function(${args}) {${body}})`);
+                    break;
+                }
+                eval(scope)[path] = newFunc;
+                console.log(eval(scope)[path]);
+        }
+        let registerFuncMixin = (path, mixinType, accessors, func, func1) => {
+            var originalFunc = eval(path);
+            var newFunc;
+            switch(mixinType) {
+                case MixinType.INSERT:
+                  const funcStr = originalFunc.toString();
+      
+                  const tokenIndex = funcStr.indexOf(accessors);
+                  if (tokenIndex === -1) {
+                      throw new Error(`Token "${accessors}" not found in function "${path}".`);
+                  }
+      
+                  let injectedCode = func
+                      .replace(/^.*?{([\s\S]*)}$/, '$1')
+                      .trim();
+      
+                  let newFuncStr =
+                      funcStr.slice(0, tokenIndex + accessors.length) +
+                      injectedCode +
+                      funcStr.slice(tokenIndex + accessors.length);
+      
+                  newFunc = eval(`(${newFuncStr})`);
+                  break;
+                case MixinType.REMOVEBETWEEN:
+                  const funcStr2 = originalFunc.toString();
+                  console.log(funcStr2);
+                  const firstTokenIndex = funcStr2.indexOf(accessors);
+                  const secondTokenIndex = funcStr2.indexOf(func);
+                  if (firstTokenIndex === -1) {
+                      throw new Error(`Token "${accessors}" not found in function "${path}".`);
+                  }
+                  if (secondTokenIndex === -1) {
+                      throw new Error(`Token "${func}" not found in function "${path}".`);
+                  }
+      
+                  let newFuncStr2 = funcStr2.split(funcStr2.substring(firstTokenIndex, secondTokenIndex + func.length)).join("");
+                  console.log(newFuncStr2);
+                  newFunc = eval(`(${newFuncStr2})`);
+                  break;
+                case MixinType.REPLACEBETWEEN:
+                  const funcStr3 = originalFunc.toString();
+  
+                  const firstTokenIndex1 = funcStr3.indexOf(accessors);
+                  const secondTokenIndex1 = funcStr3.indexOf(func);
+                  if (firstTokenIndex1 === -1) {
+                      throw new Error(`Token "${accessors}" not found in function "${path}".`);
+                  }
+                  if (secondTokenIndex1 === -1) {
+                      throw new Error(`Token "${func}" not found in function "${path}".`);
+                  }
+                  let injectedCode2 = null;
+                  console.log(typeof func);
+                  injectedCode2 = func1
+                  injectedCode2 = injectedCode2
+                  .replace(/^.*?{([\s\S]*)}$/, '$1')
+                  .trim();
+      
+                  let newFuncStr3 = funcStr3.split(funcStr3.substring(firstTokenIndex1, secondTokenIndex1 + func.length)).join(injectedCode2);
+                  newFunc = eval(`(${newFuncStr3})`);
+                  break;
+            }
+            eval(`${path} = newFunc;`)
+        }
         const REVISION = '174', t = 0, i = 1, r = 2, AddEquation = 100, SubtractEquation = 101, ReverseSubtractEquation = 102, ZeroFactor = 200, OneFactor = 201, SrcColorFactor = 202, OneMinusSrcColorFactor = 203, SrcAlphaFactor = 204, OneMinusSrcAlphaFactor = 205, DstAlphaFactor = 206, OneMinusDstAlphaFactor = 207, DstColorFactor = 208, OneMinusDstColorFactor = 209, SrcAlphaSaturateFactor = 210, ConstantColorFactor = 211, OneMinusConstantColorFactor = 212, ConstantAlphaFactor = 213, OneMinusConstantAlphaFactor = 214, b = 0, aspect = 1, CullFaceFront = 2, LessEqualDepth = 3, MultiplyBlending = 4, CustomBlending = 5, GreaterDepth = 6, NotEqualDepth = 7, AttachedBindMode = 'attached', CubeReflectionMapping = 301, CubeRefractionMapping = 302, EquirectangularReflectionMapping = 303, EquirectangularRefractionMapping = 304, CubeUVReflectionMapping = 306, RepeatWrapping = 1000, ClampToEdgeWrapping = 1001, MirroredRepeatWrapping = 1002, NearestFilter = 1003, NearestMipMapNearestFilter = 1004, NearestMipMapLinearFilter = 1005, LinearFilter = 1006, LinearMipMapNearestFilter = 1007, LinearMipMapLinearFilter = 1008, UnsignedByteType = 1009, ByteType = 1010, ShortType = 1011, UnsignedShortType = 1012, IntType = 1013, UnsignedIntType = 1014, FloatType = 1015, HalfFloatType = 1016, UnsignedShort4444Type = 1017, UnsignedShort5551Type = 1018, UnsignedInt248Type = 1020, UnsignedInt5999Type = 35902, RGBAFormat = 1023, DepthFormat = 1026, DepthStencilFormat = 1027, RedFormat = 1028, RedIntegerFormat = 1029, RGIntegerFormat = 1031, RGBAIntegerFormat = 1033, RGB_S3TC_DXT1_Format = 33776, RGBA_S3TC_DXT1_Format = 33777, RGBA_S3TC_DXT3_Format = 33778, RGBA_S3TC_DXT5_Format = 33779, RGB_PVRTC_4BPPV1_Format = 35840, RGB_PVRTC_2BPPV1_Format = 35841, RGBA_PVRTC_4BPPV1_Format = 35842, RGBA_PVRTC_2BPPV1_Format = 35843, RGB_ETC1_Format = 36196, RGB_ETC2_Format = 37492, RGBA_ETC2_EAC_Format = 37496, RGBA_ASTC_4x4_Format = 37808, RGBA_ASTC_5x4_Format = 37809, RGBA_ASTC_5x5_Format = 37810, RGBA_ASTC_6x5_Format = 37811, RGBA_ASTC_6x6_Format = 37812, RGBA_ASTC_8x5_Format = 37813, RGBA_ASTC_8x6_Format = 37814, RGBA_ASTC_8x8_Format = 37815, RGBA_ASTC_10x5_Format = 37816, RGBA_ASTC_10x6_Format = 37817, RGBA_ASTC_10x8_Format = 37818, RGBA_ASTC_10x10_Format = 37819, RGBA_ASTC_12x10_Format = 37820, RGBA_ASTC_12x12_Format = 37821, RGBA_BPTC_Format = 36492, RGB_BPTC_SIGNED_Format = 36494, RGB_BPTC_UNSIGNED_Format = 36495, SIGNED_RED_RGTC1_Format = 36284, RED_GREEN_RGTC2_Format = 36285, SIGNED_RED_GREEN_RGTC2_Format = 36286, InterpolateDiscrete = 2300, InterpolateLinear = 2301, InterpolateSmooth = 2302, ZeroCurvatureEnding = 2400, ZeroSlopeEnding = 2401, WrapAroundEnding = 2402, qe = '', Ye = 'srgb', LinearSRGBColorSpace = 'srgb-linear', LinearTransfer = 'linear', SRGBTransfer = 'srgb', KeepStencilOp = 7680, NeverStencilFunc = 512, LessStencilFunc = 513, EqualStencilFunc = 514, LessEqualStencilFunc = 515, GreaterStencilFunc = 516, NotEqualStencilFunc = 517, GreaterEqualStencilFunc = 518, AlwaysCompare = 519, StaticDrawUsage = 35044, GLSL3 = '300 es', WebGLCoordinateSystem = 2000, WebGPUCoordinateSystem = 2001;
         class EventDispatcher {
             addEventListener(e, t) {
@@ -26176,7 +26340,8 @@
         const cw = [];
         onmessage = e => {
             cw.push(e);
-        }, Ammo().then(function (e) {
+        }; 
+        let ammoFunc = function (e) {
             return lw(this, void 0, void 0, function* () {
                 yield function () {
                     return M_(this, void 0, void 0, function* () {
@@ -26653,7 +26818,15 @@
                         carStates: t
                     });
                 }
-            });
-        });
-    })();
+            })
+        }
+        for(let data of mixinData.data.classMixins) {
+            registerClassMixin(data.scope, data.path, data.mixinType, data.accessors, data.funcString, data.func2Sstring);
+        }
+        for(let data of mixinData.data.funcMixins) {
+            registerFuncMixin(data.path, data.mixinType, data.accessors, data.funcString, data.func2Sstring);
+        }
+        Ammo().then(ammoFunc);
+        
+    });
 })();

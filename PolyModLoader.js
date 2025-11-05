@@ -15,7 +15,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _SoundManager_soundClass, _EditorExtras_editorClass, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_physicsTouched, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_pmlVersion, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML;
+var _EditorExtras_editorClass, _EditorExtras_categoryDefaults, _EditorExtras_simBlocks, _EditorExtras_modelUrls, _PolyDB_instances, _PolyDB_db, _PolyDB_getDb, _PolyModLoader_instances, _PolyModLoader_polyVersion, _PolyModLoader_allMods, _PolyModLoader_simWorkerClassMixins, _PolyModLoader_simWorkerFuncMixins, _PolyModLoader_settings, _PolyModLoader_settingConstructor, _PolyModLoader_defaultSettings, _PolyModLoader_latestSetting, _PolyModLoader_keybindings, _PolyModLoader_defaultBinds, _PolyModLoader_bindConstructor, _PolyModLoader_latestBinding, _PolyModLoader_pmlVersion, _PolyModLoader_polyModUrls, _PolyModLoader_applySettings, _PolyModLoader_applyKeybinds, _PolyModLoader_preInitPML, _PolyModLoader_prePreInitPML;
 /**
  * Base class for all polytrack mods. Mods should export an instance of their mod class named `polyMod` in their main file.
  */
@@ -176,6 +176,10 @@ export class PolyMod {
         */
         this.onGameLoad = () => { };
         /**
+        * Function to run just after import, before anything else
+        */
+        this.preInit = () => { };
+        /**
          * Whether the mod
          */
         this.offlineMode = false;
@@ -331,49 +335,51 @@ export var SettingType;
 })(SettingType || (SettingType = {}));
 var Variables;
 (function (Variables) {
-    Variables["PreInitMixin"] = "D = 0";
-    Variables["PolyInitPopupClass"] = "E";
-    Variables["SoundClass"] = "gl";
-    Variables["SettingsClass"] = "hz";
+    Variables["SettingsClass"] = "az";
     Variables["SettingEnum"] = "el";
-    Variables["KeybindEnum"] = "mk";
-    Variables["SettingUIFunction"] = "yR";
-    Variables["EditorClass"] = "A_";
+    Variables["KeybindEnum"] = "gk";
+    Variables["SettingUIFunction"] = "fL";
 })(Variables || (Variables = {}));
 export class SoundManager {
-    constructor(soundClass) {
-        _SoundManager_soundClass.set(this, void 0);
-        __classPrivateFieldSet(this, _SoundManager_soundClass, soundClass, "f");
+    constructor(pml, soundClass) {
+        this.pml = pml;
+        this.soundClass = soundClass;
     }
     registerSound(id, url) {
-        __classPrivateFieldGet(this, _SoundManager_soundClass, "f").load(id, url);
+        this.soundClass.load(id, url);
     }
     playSound(id, gain) {
-        const e = __classPrivateFieldGet(this, _SoundManager_soundClass, "f").getBuffer(id);
-        if (null != e && null != __classPrivateFieldGet(this, _SoundManager_soundClass, "f").context && null != __classPrivateFieldGet(this, _SoundManager_soundClass, "f").destinationSfx) {
-            const t = __classPrivateFieldGet(this, _SoundManager_soundClass, "f").context.createBufferSource();
+        const e = this.soundClass.getBuffer(id);
+        if (null != e && null != this.soundClass.context && null != this.soundClass.destinationSfx) {
+            const t = this.soundClass.context.createBufferSource();
             t.buffer = e;
-            const n = __classPrivateFieldGet(this, _SoundManager_soundClass, "f").context.createGain();
+            const n = this.soundClass.context.createGain();
             n.gain.value = gain,
                 t.connect(n),
-                n.connect(__classPrivateFieldGet(this, _SoundManager_soundClass, "f").destinationSfx),
+                n.connect(this.soundClass.destinationSfx),
                 t.start(0);
         }
     }
     playUIClick() {
-        const e = __classPrivateFieldGet(this, _SoundManager_soundClass, "f").getBuffer("click");
-        if (null != e && null != __classPrivateFieldGet(this, _SoundManager_soundClass, "f").context && null != __classPrivateFieldGet(this, _SoundManager_soundClass, "f").destinationSfx) {
-            const t = __classPrivateFieldGet(this, _SoundManager_soundClass, "f").context.createBufferSource();
+        const e = this.soundClass.getBuffer("click");
+        if (null != e && null != this.soundClass.context && null != this.soundClass.destinationSfx) {
+            const t = this.soundClass.context.createBufferSource();
             t.buffer = e;
-            const n = __classPrivateFieldGet(this, _SoundManager_soundClass, "f").context.createGain();
+            const n = this.soundClass.context.createGain();
             n.gain.value = .0075,
                 t.connect(n),
-                n.connect(__classPrivateFieldGet(this, _SoundManager_soundClass, "f").destinationSfx),
+                n.connect(this.soundClass.destinationSfx),
                 t.start(0);
         }
     }
+    registerSoundOverride(id, url) {
+        this.pml.registerClassMixin(`soundClassHere.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `
+            null;
+            if(e === "${id}") {
+                t = ["${url}"];
+            }`);
+    }
 }
-_SoundManager_soundClass = new WeakMap();
 export class EditorExtras {
     constructor(pml) {
         _EditorExtras_editorClass.set(this, void 0);
@@ -567,7 +573,6 @@ export class PolyModLoader {
         _PolyModLoader_instances.add(this);
         _PolyModLoader_polyVersion.set(this, void 0);
         _PolyModLoader_allMods.set(this, void 0);
-        _PolyModLoader_physicsTouched.set(this, void 0);
         _PolyModLoader_simWorkerClassMixins.set(this, void 0);
         _PolyModLoader_simWorkerFuncMixins.set(this, void 0);
         _PolyModLoader_settings.set(this, void 0);
@@ -609,8 +614,6 @@ export class PolyModLoader {
         __classPrivateFieldSet(this, _PolyModLoader_polyVersion, polyVersion, "f");
         /** @type {PolyMod[]} */
         __classPrivateFieldSet(this, _PolyModLoader_allMods, [], "f");
-        /** @type {boolean} */
-        __classPrivateFieldSet(this, _PolyModLoader_physicsTouched, false, "f");
         console.log("[PML] PolyModLoader initialized, version:", pmlVersion);
         // 🔹 Run environment detection + update check
         setTimeout(() => {
@@ -667,7 +670,6 @@ export class PolyModLoader {
         __classPrivateFieldSet(this, _PolyModLoader_defaultBinds, [], "f");
         __classPrivateFieldSet(this, _PolyModLoader_bindConstructor, [], "f");
         __classPrivateFieldSet(this, _PolyModLoader_latestBinding, 31, "f");
-        this.editorExtras = new EditorExtras(this);
     }
     get polyVersion() {
         return __classPrivateFieldGet(this, _PolyModLoader_polyVersion, "f"); // Why is this even private lmfao
@@ -885,10 +887,6 @@ export class PolyModLoader {
                     newMod.iconSrc = `${polyModUrl}/icon.png`;
                     if (polyModObject.loaded) {
                         newMod.setLoaded = true;
-                        if (newMod.touchesPhysics) {
-                            __classPrivateFieldSet(this, _PolyModLoader_physicsTouched, true, "f");
-                            this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e, t, n, i, r, a) => { });
-                        }
                     }
                     __classPrivateFieldGet(this, _PolyModLoader_allMods, "f").push(newMod);
                 }
@@ -1020,43 +1018,40 @@ export class PolyModLoader {
         }
     }
     registerSettingCategory(name) {
-        __classPrivateFieldGet(this, _PolyModLoader_settings, "f").push(`MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("${name}")),`);
+        __classPrivateFieldGet(this, _PolyModLoader_settings, "f").push(`AL(this, JR, 'm', mL).call(this, AL(this, eL, 'f').get('${name}')),`);
     }
     registerBindCategory(name) {
-        __classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").push(`MR(this, iR, "m", AR).call(this, MR(this, aR, "f").get("${name}")),`);
+        __classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").push(`AL(this, JR, 'm', gL).call(this, AL(this, eL, 'f').get('${name}')),`);
     }
     registerSetting(name, id, type, defaultOption, optionsOptional) {
         var _a;
         __classPrivateFieldSet(this, _PolyModLoader_latestSetting, (_a = __classPrivateFieldGet(this, _PolyModLoader_latestSetting, "f"), _a++, _a), "f");
         __classPrivateFieldGet(this, _PolyModLoader_settingConstructor, "f").push(`${Variables.SettingEnum}[${Variables.SettingEnum}.${id} = ${__classPrivateFieldGet(this, _PolyModLoader_latestSetting, "f")}] = "${id}";`);
         if (type === "boolean") {
-            __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`, [${Variables.SettingEnum}.${id}, "${defaultOption ? "true" : "false"}"]`);
+            __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`[${Variables.SettingEnum}.${id}, "${defaultOption ? "true" : "false"}"],`);
             __classPrivateFieldGet(this, _PolyModLoader_settings, "f").push(`
-                MR(this, iR, 'm', xR).call(
-                this,
-                MR(this, aR, 'f').get('${name}'),
-                [
-                    { title: MR(this, aR, 'f').get('Off'), value: 'false' },
-                    { title: MR(this, aR, 'f').get('On'), value: 'true' }
-                ],
-                ${Variables.SettingEnum}.${id}
-                ),`);
+                AL(this, JR, 'm', vL).call(this, AL(this, eL, 'f').get('${name}'), [
+                {
+                    title: AL(this, eL, 'f').get('Off'),
+                    value: 'false'
+                },
+                {
+                    title: AL(this, eL, 'f').get('On'),
+                    value: 'true'
+                }
+            ], ${Variables.SettingEnum}.${id}),`);
         }
         else if (type === "slider") {
-            __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`, [${Variables.SettingEnum}.${id}, "${defaultOption}"]`);
+            __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`[${Variables.SettingEnum}.${id}, "${defaultOption}"],`);
             __classPrivateFieldGet(this, _PolyModLoader_settings, "f").push(`
-                 MR(this, iR, 'm', kR).call(
-              this,
-              MR(this, aR, 'f').get('${name}'),
-              ${Variables.SettingEnum}.${id}
-            ),`);
+                AL(this, JR, 'm', wL).call(
+                this, AL(this, eL, 'f').get('${name}'), 
+                ${Variables.SettingEnum}.${id}),`);
         }
         else if (type === "custom") {
-            __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`, [${Variables.SettingEnum}.${id}, "${defaultOption}"]`);
+            __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").push(`[${Variables.SettingEnum}.${id}, "${defaultOption}"],`);
             __classPrivateFieldGet(this, _PolyModLoader_settings, "f").push(`
-                MR(this, iR, 'm', xR).call(
-                this,
-                MR(this, aR, 'f').get('${name}'),
+                AL(this, JR, 'm', vL).call(this, AL(this, eL, 'f').get('${name}'),
                 ${JSON.stringify(optionsOptional)},
                 ${Variables.SettingEnum}.${id}
                 ),`);
@@ -1064,9 +1059,9 @@ export class PolyModLoader {
     }
     registerKeybind(name, id, event, defaultBind, secondBindOptional, callback) {
         var _a;
-        __classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").push(`MR(this, iR, "m", ER).call(this, MR(this, aR, "f").get("${name}"), ${Variables.KeybindEnum}.${id}),`);
+        __classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").push(`AL(this, JR, 'm', yL).call(this, AL(this, eL, 'f').get('${name}'), ${Variables.KeybindEnum}.${id}),`);
         __classPrivateFieldGet(this, _PolyModLoader_bindConstructor, "f").push(`${Variables.KeybindEnum}[${Variables.KeybindEnum}.${id} = ${__classPrivateFieldGet(this, _PolyModLoader_latestBinding, "f")}] = "${id}";`);
-        __classPrivateFieldGet(this, _PolyModLoader_defaultBinds, "f").push(`, [${Variables.KeybindEnum}.${id}, ["${defaultBind}", ${secondBindOptional ? `"${secondBindOptional}"` : "null"}]]`);
+        __classPrivateFieldGet(this, _PolyModLoader_defaultBinds, "f").push(`[${Variables.KeybindEnum}.${id}, ["${defaultBind}", ${secondBindOptional ? `"${secondBindOptional}"` : "null"}]],`);
         __classPrivateFieldSet(this, _PolyModLoader_latestBinding, (_a = __classPrivateFieldGet(this, _PolyModLoader_latestBinding, "f"), _a++, _a), "f");
         window.addEventListener(event, (e) => {
             if (this.settingClass.checkKeyBinding(e, this.getFromPolyTrack(`${Variables.KeybindEnum}.${id}`))) {
@@ -1076,13 +1071,6 @@ export class PolyModLoader {
     }
     getSetting(id) {
         return this.getFromPolyTrack(`ActivePolyModLoader.settingClass.getSetting(${Variables.SettingEnum}.${id})`);
-    }
-    registerSoundOverride(id, url) {
-        this.registerClassMixin(`${Variables.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `
-            null;
-            if(e === "${id}") {
-                t = ["${url}"];
-            }`);
     }
     /**
      * Remove a mod from the internal list.
@@ -1123,9 +1111,9 @@ export class PolyModLoader {
             if (polyMod.id && polyMod.isLoaded)
                 initList.push(polyMod.id);
         }
-        if (initList.length === 0)
-            return; // no mods to initialize lol
         let allModsInit = false;
+        if (initList.length === 0)
+            allModsInit = true; // no mods to initialize lol
         while (!allModsInit) {
             let currentMod = this.getMod(initList[0]);
             if (!currentMod)
@@ -1180,7 +1168,6 @@ export class PolyModLoader {
         }
         __classPrivateFieldGet(this, _PolyModLoader_instances, "m", _PolyModLoader_applySettings).call(this);
         __classPrivateFieldGet(this, _PolyModLoader_instances, "m", _PolyModLoader_applyKeybinds).call(this);
-        this.editorExtras.init();
     }
     postInitMods() {
         for (let polyMod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
@@ -1216,6 +1203,21 @@ export class PolyModLoader {
             }
         }
     }
+    preInitMods() {
+        __classPrivateFieldGet(this, _PolyModLoader_instances, "m", _PolyModLoader_prePreInitPML).call(this);
+        for (let polyMod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
+            if (polyMod.isLoaded) {
+                try {
+                    polyMod.preInit();
+                }
+                catch (err) {
+                    alert(`Mod ${polyMod.name} failed on pre init and will be unloaded.`);
+                    console.error("Error on pre init for mod:", err);
+                    this.setModLoaded(polyMod, false);
+                }
+            }
+        }
+    }
     simInitMods() {
         for (let polyMod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
             if (polyMod.isLoaded)
@@ -1242,12 +1244,6 @@ export class PolyModLoader {
     getAllMods() {
         return __classPrivateFieldGet(this, _PolyModLoader_allMods, "f");
     }
-    /**
-     * Whether uploading runs to leaderboard is invalid or not.
-     */
-    get lbInvalid() {
-        return __classPrivateFieldGet(this, _PolyModLoader_physicsTouched, "f");
-    }
     get simWorkerClassMixins() {
         return [...__classPrivateFieldGet(this, _PolyModLoader_simWorkerClassMixins, "f")];
     }
@@ -1265,7 +1261,6 @@ export class PolyModLoader {
      * @param {function} func       - The new function to be injected.
      */
     registerSimWorkerClassMixin(scope, path, mixinType, accessors, func, extraOptinonal) {
-        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e, t, n, i, r, a) => { });
         __classPrivateFieldGet(this, _PolyModLoader_simWorkerClassMixins, "f").push({
             scope: scope,
             path: path,
@@ -1285,7 +1280,6 @@ export class PolyModLoader {
      * @param {function} func       - The new function to be injected.
      */
     registerSimWorkerFuncMixin(path, mixinType, accessors, func, extraOptinonal) {
-        this.registerClassMixin("HB.prototype", "submitLeaderboard", MixinType.OVERRIDE, [], (e, t, n, i, r, a) => { });
         __classPrivateFieldGet(this, _PolyModLoader_simWorkerFuncMixins, "f").push({
             path: path,
             mixinType: mixinType,
@@ -1294,32 +1288,46 @@ export class PolyModLoader {
             func2Sstring: extraOptinonal ? extraOptinonal.toString() : null
         });
     }
+    /**
+     * Inject code anywhere in the main bundle
+     *
+     * @param {MixinType} mixinType                 - The type of mixin: INSERT, REMOVEBETWEEN or REPLACEBETWEEN
+     * @param {string} firstToken                   - The beginning token or for insert
+     * @param {string | Function} funcOrSecondToken - The second token, or the function for insertion
+     * @param {string | Function} funcOptional      - The function for REPLACEBETWEEN and REMOVEBETWEEN
+     */
+    registerGlobalMixin(mixinType, firstToken, funcOrSecondToken, funcOptional) { }
 }
-_PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap(), _PolyModLoader_physicsTouched = new WeakMap(), _PolyModLoader_simWorkerClassMixins = new WeakMap(), _PolyModLoader_simWorkerFuncMixins = new WeakMap(), _PolyModLoader_settings = new WeakMap(), _PolyModLoader_settingConstructor = new WeakMap(), _PolyModLoader_defaultSettings = new WeakMap(), _PolyModLoader_latestSetting = new WeakMap(), _PolyModLoader_keybindings = new WeakMap(), _PolyModLoader_defaultBinds = new WeakMap(), _PolyModLoader_bindConstructor = new WeakMap(), _PolyModLoader_latestBinding = new WeakMap(), _PolyModLoader_pmlVersion = new WeakMap(), _PolyModLoader_polyModUrls = new WeakMap(), _PolyModLoader_instances = new WeakSet(), _PolyModLoader_applySettings = function _PolyModLoader_applySettings() {
-    this.registerClassMixin(`${Variables.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `ActivePolyModLoader.soundManager = new SoundManager(this);`);
+_PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap(), _PolyModLoader_simWorkerClassMixins = new WeakMap(), _PolyModLoader_simWorkerFuncMixins = new WeakMap(), _PolyModLoader_settings = new WeakMap(), _PolyModLoader_settingConstructor = new WeakMap(), _PolyModLoader_defaultSettings = new WeakMap(), _PolyModLoader_latestSetting = new WeakMap(), _PolyModLoader_keybindings = new WeakMap(), _PolyModLoader_defaultBinds = new WeakMap(), _PolyModLoader_bindConstructor = new WeakMap(), _PolyModLoader_latestBinding = new WeakMap(), _PolyModLoader_pmlVersion = new WeakMap(), _PolyModLoader_polyModUrls = new WeakMap(), _PolyModLoader_instances = new WeakSet(), _PolyModLoader_applySettings = function _PolyModLoader_applySettings() {
     this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `() {`, `ActivePolyModLoader.settingClass = this;${__classPrivateFieldGet(this, _PolyModLoader_settingConstructor, "f").join("")}`);
-    this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `[${Variables.SettingEnum}.CheckpointVolume, "1"]`, __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").join(""));
-    this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, `MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("Controls")),`, `MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("Controls")),`, `${__classPrivateFieldGet(this, _PolyModLoader_settings, "f").join("")}MR(this, iR, "m", bR).call(this, MR(this, aR, "f").get("Controls")),`);
+    this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultSettings", MixinType.INSERT, `return new Map([`, __classPrivateFieldGet(this, _PolyModLoader_defaultSettings, "f").join(""));
+    this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, `AL(this, JR, 'm', mL).call(this, AL(this, eL, 'f').get('Controls')),`, `AL(this, JR, 'm', mL).call(this, AL(this, eL, 'f').get('Controls')),`, `${__classPrivateFieldGet(this, _PolyModLoader_settings, "f").join("")}AL(this, JR, 'm', mL).call(this, AL(this, eL, 'f').get('Controls')),`);
 }, _PolyModLoader_applyKeybinds = function _PolyModLoader_applyKeybinds() {
     this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultKeyBindings", MixinType.INSERT, `() {`, `${__classPrivateFieldGet(this, _PolyModLoader_bindConstructor, "f").join("")};`);
-    this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultKeyBindings", MixinType.INSERT, `[${Variables.KeybindEnum}.SpectatorSpeedModifier, ["ShiftLeft", "ShiftRight"]]`, __classPrivateFieldGet(this, _PolyModLoader_defaultBinds, "f").join(""));
-    this.registerFuncMixin(Variables.SettingUIFunction, MixinType.REPLACEBETWEEN, ` );`, ` );`, `),${__classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").join("")}null;`);
-    this.registerClassMixin(`${Variables.EditorClass}.prototype`, "update", MixinType.INSERT, `y_(this, DM, b_(this, bS, "m", f_).call(this), "f"),`, `ActivePolyModLoader.editorExtras.construct(this),`);
+    this.registerClassMixin(`${Variables.SettingsClass}.prototype`, "defaultKeyBindings", MixinType.INSERT, `return new Map([`, __classPrivateFieldGet(this, _PolyModLoader_defaultBinds, "f").join(""));
+    this.registerFuncMixin(Variables.SettingUIFunction, MixinType.INSERT, `get('Toggle spectator camera'), gk.ToggleSpectatorCamera)`, `,${__classPrivateFieldGet(this, _PolyModLoader_keybindings, "f").join("")}null`);
 }, _PolyModLoader_preInitPML = function _PolyModLoader_preInitPML() {
-    this.registerFuncMixin("AN", MixinType.INSERT, `TN(this, iN, "f").appendChild(t);`, `
+    this.registerFuncMixin("gN", MixinType.INSERT, `kN(this, JD, 'f').appendChild(t);`, `
             const text = document.createElement("a");
             text.href = "https://polymodloader.com";
             text.target = "_blank";
             text.textContent = "polymodloader.com - " + e.get("Version") + " " + "${__classPrivateFieldGet(this, _PolyModLoader_pmlVersion, "f")}";
-            TN(this, iN, "f").appendChild(text);
+            kN(this, JD, 'f').appendChild(text);
         `);
     // register PML settings
     this.registerSettingCategory("PolyModLoader");
     this.registerSetting("Cache mods (requires reload)", "pmlCacheMods", SettingType.BOOL, true);
-    this.registerFuncMixin("polyInitFunction", MixinType.INSERT, Variables.PreInitMixin, `;ActivePolyModLoader.popUpClass = ${Variables.PolyInitPopupClass};`);
     this.registerSetting("Debug Mode (Reload TWICE to apply)", "debugmode", SettingType.BOOL, false);
     this.registerSetting("Clear polyMods", "clearmods", SettingType.BOOL, false);
+}, _PolyModLoader_prePreInitPML = function _PolyModLoader_prePreInitPML() {
+    this.registerGlobalMixin(MixinType.INSERT, `}), xN(this, $D, null, 'f');`, `ActivePolyModLoader.gameLoad();console.log("Game lod");`);
+    this.registerGlobalMixin(MixinType.INSERT, `})) : mz(this, cz, null, 'f');`, `
+          ActivePolyModLoader.simInitMods();console.log("a");gz(this, hz, 'f').postMessage({
+            messageType: 69,
+            classMixins: ActivePolyModLoader.simWorkerClassMixins || [],
+            funcMixins: ActivePolyModLoader.simWorkerFuncMixins || []
+          });`);
 };
 // @ts-ignore
-const ActivePolyModLoader = new PolyModLoader("0.5.1", window.pmlversion);
+const ActivePolyModLoader = new PolyModLoader("0.5.2", window.pmlversion);
 export { ActivePolyModLoader };
