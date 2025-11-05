@@ -178,7 +178,7 @@ export class PolyMod {
         /**
         * Function to run just after import, before anything else
         */
-        this.preInit = () => { };
+        this.preInit = (pmlInstance) => { };
         /**
          * Whether the mod
          */
@@ -1208,7 +1208,7 @@ export class PolyModLoader {
         for (let polyMod of __classPrivateFieldGet(this, _PolyModLoader_allMods, "f")) {
             if (polyMod.isLoaded) {
                 try {
-                    polyMod.preInit();
+                    polyMod.preInit(this);
                 }
                 catch (err) {
                     alert(`Mod ${polyMod.name} failed on pre init and will be unloaded.`);
@@ -1320,7 +1320,7 @@ _PolyModLoader_polyVersion = new WeakMap(), _PolyModLoader_allMods = new WeakMap
     this.registerSetting("Debug Mode (Reload TWICE to apply)", "debugmode", SettingType.BOOL, false);
     this.registerSetting("Clear polyMods", "clearmods", SettingType.BOOL, false);
 }, _PolyModLoader_prePreInitPML = function _PolyModLoader_prePreInitPML() {
-    this.registerGlobalMixin(MixinType.INSERT, `}), xN(this, $D, null, 'f');`, `ActivePolyModLoader.gameLoad();console.log("Game lod");`);
+    this.registerGlobalMixin(MixinType.INSERT, `}), xN(this, $D, null, 'f');`, `ActivePolyModLoader.gameLoad();`);
     this.registerGlobalMixin(MixinType.INSERT, `})) : mz(this, cz, null, 'f');`, `
           ActivePolyModLoader.simInitMods();console.log("a");gz(this, hz, 'f').postMessage({
             messageType: 69,

@@ -300,7 +300,7 @@ export class PolyMod {
     /**
     * Function to run just after import, before anything else
     */
-    preInit = () => { }
+    preInit = (pmlInstance: PolyModLoader) => { }
     /**
      * Whether the mod
      */
@@ -1294,7 +1294,7 @@ export class PolyModLoader {
         for (let polyMod of this.#allMods) {
             if (polyMod.isLoaded) {
                 try {
-                    polyMod.preInit();
+                    polyMod.preInit(this);
                 } catch (err) {
                     alert(`Mod ${polyMod.name} failed on pre init and will be unloaded.`);
                     console.error("Error on pre init for mod:", err);
