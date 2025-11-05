@@ -6,6 +6,7 @@
         "1.0.2": ["Ported to PolyTrack 0.5.1"],
         "1.0.3": ["Fixed UI getting shown when it should stay hidden."],
         "1.0.4": ["[Emergency patch] Fixed modpackTools.js import link"],
-        "1.0.5": ["Added function isElectron to the mod itself to stop depending on a deprecated library"]
+        "1.0.5": ["Added function isElectron to the mod itself to stop depending on a deprecated library"],
+        "1.1.0": ["Ported to 0.5.2"]
     }
 }
