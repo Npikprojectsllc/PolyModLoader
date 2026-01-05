@@ -32,13 +32,6 @@ class SoundManager {
                 t.start(0);
         }
     }
-    registerSoundOverride(id, url) {
-        this.pml.registerClassMixin(`soundClassHere.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `
-            null;
-            if(e === "${id}") {
-                t = ["${url}"];
-            }`);
-    }
 }
 
 const ObfNames = {
@@ -139,6 +132,13 @@ class PmlApi extends PolyMod {
     }
     postInit = () => {
         
+    }
+    registerSoundOverride(id, url) {
+        this.pml.registerClassMixin(`soundClassHere.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `
+            null;
+            if(e === "${id}") {
+                t = ["${url}"];
+            }`);
     }
 }
 
