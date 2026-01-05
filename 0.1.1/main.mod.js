@@ -52,7 +52,7 @@ const ObfNames = {
     Environment: "WA",
     SimEnvironment: "vv",
 
-    SoundClass = "gl",
+    SoundClass: "gl",
 }
 
 class EditorExtras {
