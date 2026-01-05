@@ -137,7 +137,7 @@ class PmlApi extends PolyMod {
         
     }
     registerSoundOverride(id, url) {
-        this.pml.registerClassMixin(`${ObfNames.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, "f").addResource(),`, `
+        this.pml.registerClassMixin(`${ObfNames.SoundClass}.prototype`, "load", MixinType.INSERT, `ml(this, nl, 'f').addResource(),`, `
             null;
             if(e === "${id}") {
                 t = ["${url}"];
