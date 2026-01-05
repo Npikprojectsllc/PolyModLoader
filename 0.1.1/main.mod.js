@@ -120,6 +120,7 @@ class PmlApi extends PolyMod {
     soundManager = null;
     editorExtras = null;
     preInit = (pml) => {
+        this.pml = pml;
         this.editorExtras = new EditorExtras(pml);
         this.editorExtras.preInit();
         pml.registerGlobalMixin(MixinType.INSERT, `const e = A_(this, NM, 'f');`, `ActivePolyModLoader.getMod("${this.modID}").editorExtras.construct(this);`);
