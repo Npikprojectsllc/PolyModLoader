@@ -86,14 +86,14 @@ class EditorExtras {
     }
 
     registerCategory(id, defaultId) {
-        let latestCategory = (Object.keys(this.pml.getFromPolyTrack(ObfNames.CategoriesEnum)).length / 2) + 2
+        let latestCategory = (Object.keys(this.pml.getFromPolyTrack(ObfNames.CategoriesEnum)).length / 2) + 1
         this.pml.getFromPolyTrack(`${ObfNames.CategoriesEnum}[${ObfNames.CategoriesEnum}.${id} = ${latestCategory}]  =  "${id}"`);
         this.simBlocks.push(`${ObfNames.SimCategories}[${ObfNames.SimCategories}.${id} = ${latestCategory}]  =  "${id}"`);
         this.categoryDefaults.push(`case ${ObfNames.CategoriesEnum}.${id}:n = this.getPart(${ObfNames.BlocksEnum}.${defaultId});break;`)
     }
 
     registerBlock(id, categoryId, checksum, sceneName, modelName, overlapSpace, extraSettings) {
-        let latestBlock = (Object.keys(this.pml.getFromPolyTrack(`${ObfNames.BlocksEnum}`)).length / 2) + 2
+        let latestBlock = (Object.keys(this.pml.getFromPolyTrack(`${ObfNames.BlocksEnum}`)).length / 2) + 1
         this.pml.getFromPolyTrack(`${ObfNames.BlocksEnum}[${ObfNames.BlocksEnum}.${id} = ${latestBlock}]  =  "${id}"`);
         this.pml.getFromPolyTrack(`${ObfNames.BlockRegister}.push(new ${ObfNames.BlockConfig}("${checksum}",${ObfNames.CategoriesEnum}.${categoryId},${ObfNames.BlocksEnum}.${id},[["${sceneName}", "${modelName}"]],${ObfNames.Environment},${JSON.stringify(overlapSpace)}${extraSettings && extraSettings.specialSettings ? `, { type: ${ObfNames.BoundType}.${extraSettings.specialSettings.type}, center: ${JSON.stringify(extraSettings.specialSettings.center)}, size: ${JSON.stringify(extraSettings.specialSettings.size)}}` : ""}))`);
         this.pml.getFromPolyTrack(`${ObfNames.BlockMap}.clear();for (const e of ${ObfNames.BlockRegister}) {if (!${ObfNames.BlockMap}.has(e.id)){ ${ObfNames.BlockMap}.set(e.id, e);}; }`);
