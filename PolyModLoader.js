@@ -1127,6 +1127,7 @@ export class PolyModLoader {
                     initList.splice(0, 1);
                     alert(`Mod ${currentMod.name} is missing mod ${dependency.id} ${dependency.version} and will not be initialized.`);
                     console.warn(`Mod ${currentMod.name} is missing mod ${dependency.id} ${dependency.version} and will not be initialized.`);
+                    this.setModLoaded(currentMod, false);
                     break;
                 }
                 if (!curDependency.isLoaded) {
@@ -1134,6 +1135,7 @@ export class PolyModLoader {
                     initList.splice(0, 1);
                     alert(`Mod ${currentMod.name} depends on mod ${dependency.id} ${dependency.version} but the dependency isn't loaded. Mod will not be initialized.`);
                     console.warn(`Mod ${currentMod.name} depends on mod ${dependency.id} ${dependency.version} but the dependency isn't loaded. Mod will not be initialized.`);
+                    this.setModLoaded(currentMod, false);
                     break;
                 }
                 if (curDependency.version !== dependency.version) {
@@ -1141,6 +1143,7 @@ export class PolyModLoader {
                     initList.splice(0, 1);
                     alert(`Mod ${currentMod.name} needs version ${dependency.version} of ${curDependency.name} but ${curDependency.version} is present.`);
                     console.warn(`Mod ${currentMod.name} needs version ${dependency.version} of ${curDependency.name} but ${curDependency.version} is present.`);
+                    this.setModLoaded(currentMod, false);
                     break;
                 }
                 if (!curDependency.initialized) {
