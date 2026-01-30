@@ -279,7 +279,7 @@
   o()(m.A, h);
   m.A && m.A.locals && m.A.locals;
   const g = JSON.parse('{"rE":"0.5.2","l$":{"r":1,"M":4}}');
-  const x = "electron",
+  const x = "PolyModLoader",
     y = g.l$.r;
   if (!Number.isSafeInteger(y) || y < 1)
     throw new Error(
